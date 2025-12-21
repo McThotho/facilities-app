@@ -21,6 +21,7 @@ function initDatabase() {
       contact TEXT,
       password TEXT NOT NULL,
       role TEXT NOT NULL CHECK(role IN ('Administrator', 'Manager', 'User')),
+      must_change_password INTEGER DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);

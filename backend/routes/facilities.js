@@ -3,9 +3,23 @@ const router = express.Router();
 const db = require('../database');
 const { authenticateToken, authorizeRoles } = require('../middleware/auth');
 
-// Get all facilities
+// Get all facilities (filtered by role)
 router.get('/', authenticateToken, (req, res) => {
-  const facilities = db.prepare('SELECT * FROM facilities ORDER BY name').all();
+  let facilities;
+
+  if (req.user.role === 'User') {
+    // Users only see their assigned facilities
+    facilities = db.prepare(`
+      SELECT f.* FROM facilities f
+      INNER JOIN user_facilities uf ON f.id = uf.facility_id
+      WHERE uf.user_id = ?
+      ORDER BY f.name
+    `).all(req.user.id);
+  } else {
+    // Admins and Managers see all facilities
+    facilities = db.prepare('SELECT * FROM facilities ORDER BY name').all();
+  }
+
   res.json(facilities);
 });
 

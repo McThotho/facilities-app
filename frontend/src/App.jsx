@@ -6,9 +6,10 @@ import ModernLogin from './pages/ModernLogin';
 import ModernDashboard from './pages/ModernDashboard';
 import FacilityDetail from './pages/FacilityDetail';
 import StaffManagement from './pages/StaffManagement';
+import ChangePassword from './pages/ChangePassword';
 
 function PrivateRoute({ children }) {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, user } = useAuth();
 
   if (loading) {
     return (
@@ -18,7 +19,16 @@ function PrivateRoute({ children }) {
     );
   }
 
-  return isAuthenticated ? children : <Navigate to="/login" />;
+  if (!isAuthenticated) {
+    return <Navigate to="/login" />;
+  }
+
+  // Force password change if required
+  if (user?.must_change_password && window.location.pathname !== '/change-password') {
+    return <Navigate to="/change-password" />;
+  }
+
+  return children;
 }
 
 function AppRoutes() {
@@ -29,6 +39,14 @@ function AppRoutes() {
       <Route
         path="/login"
         element={isAuthenticated ? <Navigate to="/" /> : <ModernLogin />}
+      />
+      <Route
+        path="/change-password"
+        element={
+          <PrivateRoute>
+            <ChangePassword />
+          </PrivateRoute>
+        }
       />
       <Route
         path="/"

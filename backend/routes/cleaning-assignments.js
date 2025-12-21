@@ -145,33 +145,44 @@ router.post('/', authenticateToken, (req, res) => {
 
     // Check if assignment already exists for this date
     const existing = db.prepare(`
-      SELECT id FROM cleaning_assignments
+      SELECT id, assigned_user_id FROM cleaning_assignments
       WHERE facility_id = ? AND scheduled_date = ?
     `).get(facilityId, scheduledDate);
 
+    let assignmentId;
+
     if (existing) {
-      return res.status(400).json({ error: 'Assignment already exists for this date' });
+      // Override: Update existing assignment with new user
+      db.prepare(`
+        UPDATE cleaning_assignments
+        SET assigned_user_id = ?
+        WHERE id = ?
+      `).run(assignedUserId, existing.id);
+
+      assignmentId = existing.id;
+    } else {
+      // Create new assignment
+      const result = db.prepare(`
+        INSERT INTO cleaning_assignments (facility_id, assigned_user_id, scheduled_date)
+        VALUES (?, ?, ?)
+      `).run(facilityId, assignedUserId, scheduledDate);
+
+      assignmentId = result.lastInsertRowid;
     }
 
-    // Create assignment
-    const result = db.prepare(`
-      INSERT INTO cleaning_assignments (facility_id, assigned_user_id, scheduled_date)
-      VALUES (?, ?, ?)
-    `).run(facilityId, assignedUserId, scheduledDate);
+    // Create checklist items from templates (only if new assignment)
+    if (!existing) {
+      const insertChecklist = db.prepare(`
+        INSERT INTO cleaning_checklist_items (assignment_id, area, task_name)
+        VALUES (?, ?, ?)
+      `);
 
-    const assignmentId = result.lastInsertRowid;
-
-    // Create checklist items from templates
-    const insertChecklist = db.prepare(`
-      INSERT INTO cleaning_checklist_items (assignment_id, area, task_name)
-      VALUES (?, ?, ?)
-    `);
-
-    Object.entries(CHECKLIST_TEMPLATES).forEach(([area, tasks]) => {
-      tasks.forEach(taskName => {
-        insertChecklist.run(assignmentId, area, taskName);
+      Object.entries(CHECKLIST_TEMPLATES).forEach(([area, tasks]) => {
+        tasks.forEach(taskName => {
+          insertChecklist.run(assignmentId, area, taskName);
+        });
       });
-    });
+    }
 
     // Fetch the created assignment
     const assignment = db.prepare(`

@@ -44,10 +44,15 @@ export default function StaffManagement() {
   const handleAddUser = async (e) => {
     e.preventDefault();
     try {
-      await authAPI.register(formData);
+      const response = await authAPI.register(formData);
+      const { generatedUsername, defaultPassword } = response.data;
+
       setFormData({ emp_id: '', username: '', contact: '', facility_id: '', role: 'User' });
       setShowAddUser(false);
       await loadData();
+
+      // Show credentials to admin
+      alert(`Staff created successfully!\n\nUsername: ${generatedUsername}\nDefault Password: ${defaultPassword}\n\nPlease share these credentials with the staff member. They will be required to change their password on first login.`);
     } catch (error) {
       console.error('Failed to add user:', error);
       alert(error.response?.data?.error || 'Failed to add user');

@@ -7,9 +7,11 @@ import ScheduleVisits from '../components/ScheduleVisits';
 import FacilityChat from '../components/FacilityChat';
 import Grievances from '../components/Grievances';
 import { Building2 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 export default function FacilityDetail() {
   const { id } = useParams();
+  const { user } = useAuth();
   const [facility, setFacility] = useState(null);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -101,7 +103,10 @@ export default function FacilityDetail() {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full">
           <TabsList className="border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 px-6">
             <TabsTrigger value="cleaning">Today's Cleaning</TabsTrigger>
-            <TabsTrigger value="visits">Schedule Visits</TabsTrigger>
+            {/* Schedule Visits - Admin only */}
+            {user?.role === 'Administrator' && (
+              <TabsTrigger value="visits">Schedule Visits</TabsTrigger>
+            )}
             <TabsTrigger value="grievances">Grievances</TabsTrigger>
             <TabsTrigger value="chat">Team Chat</TabsTrigger>
           </TabsList>
@@ -111,9 +116,12 @@ export default function FacilityDetail() {
               <ModernCleaningSchedule facilityId={id} />
             </TabsContent>
 
-            <TabsContent value="visits" className="h-full overflow-y-auto p-6">
-              <ScheduleVisits facilityId={id} />
-            </TabsContent>
+            {/* Schedule Visits - Admin only */}
+            {user?.role === 'Administrator' && (
+              <TabsContent value="visits" className="h-full overflow-y-auto p-6">
+                <ScheduleVisits facilityId={id} />
+              </TabsContent>
+            )}
 
             <TabsContent value="grievances" className="h-full overflow-y-auto p-6">
               <Grievances facilityId={id} />

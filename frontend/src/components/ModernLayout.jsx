@@ -66,21 +66,23 @@ export default function ModernLayout({ children }) {
 
         {/* Navigation */}
         <nav className="p-3 space-y-1">
-          {/* Dashboard Link */}
-          <Link
-            to="/"
-            className={`flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
-              isActive('/')
-                ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg'
-                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-            }`}
-          >
-            <Home size={20} className={isActive('/') ? 'text-white' : 'text-gray-500 dark:text-gray-400 group-hover:text-blue-500 dark:group-hover:text-blue-400'} />
-            <span className="font-medium">Dashboard</span>
-          </Link>
+          {/* Dashboard Link (Admin only) */}
+          {user?.role === 'Administrator' && (
+            <Link
+              to="/"
+              className={`flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
+                isActive('/')
+                  ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg'
+                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+              }`}
+            >
+              <Home size={20} className={isActive('/') ? 'text-white' : 'text-gray-500 dark:text-gray-400 group-hover:text-blue-500 dark:group-hover:text-blue-400'} />
+              <span className="font-medium">Dashboard</span>
+            </Link>
+          )}
 
-          {/* Staff Management Link (Manager/Admin only) */}
-          {(user?.role === 'Manager' || user?.role === 'Administrator') && (
+          {/* Staff Management Link (Admin only) */}
+          {user?.role === 'Administrator' && (
             <Link
               to="/staff"
               className={`flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
