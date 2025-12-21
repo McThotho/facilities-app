@@ -130,27 +130,11 @@ export default function ModernLogin() {
                 )}
               </button>
             </form>
-
-            {/* Demo Credentials */}
-            <div className="mt-6 p-4 bg-white/5 border border-white/10 rounded-xl backdrop-blur-sm">
-              <p className="text-xs font-semibold text-blue-200 mb-2 flex items-center gap-1">
-                <Sparkles size={12} />
-                Demo Credentials
-              </p>
-              <div className="space-y-1 text-sm">
-                <p className="text-gray-300">
-                  Username: <span className="font-mono text-white">admin</span>
-                </p>
-                <p className="text-gray-300">
-                  Password: <span className="font-mono text-white">admin123</span>
-                </p>
-              </div>
-            </div>
           </div>
 
           {/* Footer */}
           <p className="text-center text-blue-200/60 text-sm mt-6">
-            Powered by AI • Built with ❤️
+            VHPL™. Powered by AI. Built with heart.
           </p>
         </div>
       </div>
