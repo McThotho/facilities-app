@@ -17,7 +17,7 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:3000', 'https://frontend-eight-ruby-85.vercel.app'],
+  origin: ['http://localhost:5173', 'http://localhost:3000', 'https://facility-hub-vhpl-01.vercel.app'],
   credentials: true
 }));
 app.use(express.json());
