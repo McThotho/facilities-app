@@ -2,7 +2,9 @@ const Database = require('better-sqlite3');
 const path = require('path');
 const bcrypt = require('bcryptjs');
 
-const db = new Database(path.join(__dirname, 'facilities.db'));
+// Use /tmp for Vercel serverless or local path
+const dbPath = process.env.VERCEL ? '/tmp/facilities.db' : path.join(__dirname, 'facilities.db');
+const db = new Database(dbPath);
 
 // Enable foreign keys
 db.pragma('foreign_keys = ON');
@@ -127,7 +129,7 @@ function initDatabase() {
     )
   `);
 
-  // Create default admin user if not exists
+  // Create default admin user if not exists (ONLY admin, no dummy users)
   const adminExists = db.prepare('SELECT id FROM users WHERE username = ?').get('admin');
   if (!adminExists) {
     const hashedPassword = bcrypt.hashSync('admin123', 10);
@@ -136,26 +138,6 @@ function initDatabase() {
       VALUES (?, ?, ?, ?)
     `).run('admin', 'admin@facilities.com', hashedPassword, 'Administrator');
     console.log('Default admin user created: username=admin, password=admin123');
-  }
-
-  // Create sample users (cleaners) if none exist
-  const usersCount = db.prepare('SELECT COUNT(*) as count FROM users WHERE role = ?').get('User');
-  if (usersCount.count === 0) {
-    const sampleUsers = [
-      ['john_doe', 'john@facilities.com', 'password123', 'User'],
-      ['jane_smith', 'jane@facilities.com', 'password123', 'User'],
-      ['mike_johnson', 'mike@facilities.com', 'password123', 'User'],
-      ['sarah_williams', 'sarah@facilities.com', 'password123', 'User'],
-      ['david_brown', 'david@facilities.com', 'password123', 'User'],
-      ['manager1', 'manager@facilities.com', 'password123', 'Manager']
-    ];
-
-    const insertUser = db.prepare('INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)');
-    sampleUsers.forEach(([username, email, password, role]) => {
-      const hashedPassword = bcrypt.hashSync(password, 10);
-      insertUser.run(username, email, hashedPassword, role);
-    });
-    console.log('Sample users created (password: password123)');
   }
 
   // Create sample facilities if none exist
