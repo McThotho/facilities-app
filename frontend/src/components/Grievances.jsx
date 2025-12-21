@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { grievancesAPI } from '../utils/api';
 import { AlertCircle, Plus, CheckCircle, PlayCircle, Clock } from 'lucide-react';
-import { format } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
 import { useAuth } from '../context/AuthContext';
 
 const GRIEVANCE_CATEGORIES = [
@@ -217,27 +217,27 @@ export default function Grievances({ facilityId }) {
                     <div>
                       Reported by: <span className="font-medium">{grievance.requester_name}</span>
                       {' · '}
-                      {format(new Date(grievance.created_at), 'MMM dd, yyyy h:mm a')}
+                      {formatInTimeZone(new Date(grievance.created_at), 'Indian/Maldives', 'MMM dd, yyyy h:mm a')}
                     </div>
 
                     {grievance.picker_name && (
                       <div>
                         Picked by: <span className="font-medium">{grievance.picker_name}</span>
                         {grievance.picked_at && (
-                          <span> · {format(new Date(grievance.picked_at), 'MMM dd, yyyy h:mm a')}</span>
+                          <span> · {formatInTimeZone(new Date(grievance.picked_at), 'Indian/Maldives', 'MMM dd, yyyy h:mm a')}</span>
                         )}
                       </div>
                     )}
 
                     {grievance.started_at && (
                       <div>
-                        Work started: {format(new Date(grievance.started_at), 'MMM dd, yyyy h:mm a')}
+                        Work started: {formatInTimeZone(new Date(grievance.started_at), 'Indian/Maldives', 'MMM dd, yyyy h:mm a')}
                       </div>
                     )}
 
                     {grievance.completed_at && (
                       <div className="text-green-600 dark:text-green-400">
-                        Completed: {format(new Date(grievance.completed_at), 'MMM dd, yyyy h:mm a')}
+                        Completed: {formatInTimeZone(new Date(grievance.completed_at), 'Indian/Maldives', 'MMM dd, yyyy h:mm a')}
                       </div>
                     )}
                   </div>
