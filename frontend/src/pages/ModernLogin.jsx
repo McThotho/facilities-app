@@ -134,7 +134,7 @@ export default function ModernLogin() {
 
           {/* Footer */}
           <p className="text-center text-blue-200/60 text-sm mt-6">
-            VHPL™. Powered by AI. Built with heart.
+            VHPL™. Powered by AI. Built with ❤️.
           </p>
         </div>
       </div>
