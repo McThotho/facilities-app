@@ -3,7 +3,7 @@ import { chatAPI } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { Send, RefreshCw, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
-import { utcToZonedTime } from 'date-fns-tz';
+import { toZonedTime } from 'date-fns-tz';
 
 export default function FacilityChat({ facilityId }) {
   const [messages, setMessages] = useState([]);
@@ -114,7 +114,7 @@ export default function FacilityChat({ facilityId }) {
                         msg.user_id === user.id ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'
                       }`}
                     >
-                      {format(utcToZonedTime(new Date(msg.created_at), 'Indian/Maldives'), 'hh:mm a')}
+                      {format(toZonedTime(new Date(msg.created_at), 'Indian/Maldives'), 'hh:mm a')}
                     </span>
                   </div>
                   <p className="mt-1 whitespace-pre-wrap">{msg.message}</p>
