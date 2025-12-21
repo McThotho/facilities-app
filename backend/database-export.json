@@ -1,0 +1,323 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "emp_id": null,
+      "username": "admin",
+      "email": "admin@facilities.com",
+      "contact": null,
+      "password": "$2b$10$zdDg5WMfWpC13gzWKP5nXeSY3bgWlsHDyk/e4g1Wl8tf97TH69CTC",
+      "role": "Administrator",
+      "created_at": "2025-12-21 05:41:04",
+      "must_change_password": 0
+    },
+    {
+      "id": 7,
+      "emp_id": null,
+      "username": "manager1",
+      "email": "manager@facilities.com",
+      "contact": null,
+      "password": "$2b$10$dzt6U1Z/HysWdbeVy5DjCO7lla0bSQIx9RhkVKiXQioTS3US8sOlu",
+      "role": "Manager",
+      "created_at": "2025-12-21 05:41:04",
+      "must_change_password": 0
+    },
+    {
+      "id": 8,
+      "emp_id": "45512",
+      "username": "rahman45512",
+      "email": "mizanur_rahman@facilities.com",
+      "contact": "7472503",
+      "password": "$2b$10$exAVC3aF8xHNCzXyiD.GLuP5b0kk45/gkxZnbqpG1H7T.hMfodmua",
+      "role": "User",
+      "created_at": "2025-12-21 05:43:10",
+      "must_change_password": 0
+    },
+    {
+      "id": 14,
+      "emp_id": "43197",
+      "username": "islam43197",
+      "email": "samirul_islam@facilities.com",
+      "contact": "9427725",
+      "password": "$2b$10$b8iX.q1rdLF.A.1PW56/DutSIIax2gxC2ju1gHINO2F8Sqx0oeqd6",
+      "role": "User",
+      "created_at": "2025-12-21 05:52:40",
+      "must_change_password": 0
+    },
+    {
+      "id": 15,
+      "emp_id": "53532",
+      "username": "shohag53532",
+      "email": "md_shohag@facilities.com",
+      "contact": "7747249",
+      "password": "$2b$10$xbVG9ldqBWiBf5md9tXwGe7idLeQfZ9DWxm0cp8TTHJaCpqWNWgNq",
+      "role": "User",
+      "created_at": "2025-12-21 05:53:58",
+      "must_change_password": 0
+    },
+    {
+      "id": 16,
+      "emp_id": "45048",
+      "username": "miah45048",
+      "email": "jalal_miah@facilities.com",
+      "contact": "7682560",
+      "password": "$2b$10$umdoGGT5dB6YvTRvkbII9O5bkHehsBaSbQn9XyaSF1oZ76v0wCeq2",
+      "role": "User",
+      "created_at": "2025-12-21 05:55:45",
+      "must_change_password": 0
+    },
+    {
+      "id": 17,
+      "emp_id": "55072",
+      "username": "veeramani55072",
+      "email": "vikram_veeramani@facilities.com",
+      "contact": "9178228",
+      "password": "$2b$10$9fV3uc1Yw1P8gMmWHJwaSOiHJfEfoLCW3Kmm4rrrwlbyy4C2irbP6",
+      "role": "User",
+      "created_at": "2025-12-21 05:57:19",
+      "must_change_password": 0
+    }
+  ],
+  "facilities": [
+    {
+      "id": 6,
+      "name": "M. Rose Bush",
+      "location": "Location 1",
+      "description": "Facility 1",
+      "created_at": "2025-12-21 05:46:41"
+    },
+    {
+      "id": 7,
+      "name": "G. Araakuri",
+      "location": "Location 2",
+      "description": "Facility 2",
+      "created_at": "2025-12-21 05:46:41"
+    },
+    {
+      "id": 8,
+      "name": "M. Kashmeeru Wadhee",
+      "location": "Location 3",
+      "description": "Facility 3",
+      "created_at": "2025-12-21 05:46:41"
+    },
+    {
+      "id": 9,
+      "name": "M. Dhumbuge",
+      "location": "Location 4",
+      "description": "Facility 4",
+      "created_at": "2025-12-21 05:46:41"
+    },
+    {
+      "id": 10,
+      "name": "G. Gaakoshi",
+      "location": "Location 5",
+      "description": "Facility 5",
+      "created_at": "2025-12-21 05:46:41"
+    }
+  ],
+  "userFacilities": [
+    {
+      "user_id": 2,
+      "facility_id": 6
+    },
+    {
+      "user_id": 3,
+      "facility_id": 6
+    },
+    {
+      "user_id": 4,
+      "facility_id": 7
+    },
+    {
+      "user_id": 5,
+      "facility_id": 7
+    },
+    {
+      "user_id": 6,
+      "facility_id": 8
+    },
+    {
+      "user_id": 2,
+      "facility_id": 8
+    },
+    {
+      "user_id": 3,
+      "facility_id": 9
+    },
+    {
+      "user_id": 4,
+      "facility_id": 9
+    },
+    {
+      "user_id": 5,
+      "facility_id": 10
+    },
+    {
+      "user_id": 6,
+      "facility_id": 10
+    },
+    {
+      "user_id": 8,
+      "facility_id": 10
+    },
+    {
+      "user_id": 14,
+      "facility_id": 7
+    },
+    {
+      "user_id": 15,
+      "facility_id": 8
+    },
+    {
+      "user_id": 16,
+      "facility_id": 6
+    },
+    {
+      "user_id": 17,
+      "facility_id": 6
+    }
+  ],
+  "cleaningAssignments": [
+    {
+      "id": 29,
+      "facility_id": 6,
+      "assigned_user_id": 16,
+      "scheduled_date": "2025-12-21",
+      "status": "pending",
+      "started_at": null,
+      "completed_at": null,
+      "created_at": "2025-12-21 06:05:16"
+    },
+    {
+      "id": 30,
+      "facility_id": 6,
+      "assigned_user_id": 17,
+      "scheduled_date": "2025-12-22",
+      "status": "pending",
+      "started_at": null,
+      "completed_at": null,
+      "created_at": "2025-12-21 06:05:16"
+    },
+    {
+      "id": 31,
+      "facility_id": 6,
+      "assigned_user_id": 16,
+      "scheduled_date": "2025-12-23",
+      "status": "pending",
+      "started_at": null,
+      "completed_at": null,
+      "created_at": "2025-12-21 06:05:16"
+    },
+    {
+      "id": 32,
+      "facility_id": 6,
+      "assigned_user_id": 17,
+      "scheduled_date": "2025-12-24",
+      "status": "pending",
+      "started_at": null,
+      "completed_at": null,
+      "created_at": "2025-12-21 06:05:16"
+    },
+    {
+      "id": 33,
+      "facility_id": 6,
+      "assigned_user_id": 16,
+      "scheduled_date": "2025-12-25",
+      "status": "pending",
+      "started_at": null,
+      "completed_at": null,
+      "created_at": "2025-12-21 06:05:16"
+    },
+    {
+      "id": 34,
+      "facility_id": 6,
+      "assigned_user_id": 17,
+      "scheduled_date": "2025-12-26",
+      "status": "pending",
+      "started_at": null,
+      "completed_at": null,
+      "created_at": "2025-12-21 06:05:16"
+    },
+    {
+      "id": 35,
+      "facility_id": 6,
+      "assigned_user_id": 16,
+      "scheduled_date": "2025-12-27",
+      "status": "pending",
+      "started_at": null,
+      "completed_at": null,
+      "created_at": "2025-12-21 06:05:16"
+    },
+    {
+      "id": 36,
+      "facility_id": 7,
+      "assigned_user_id": 14,
+      "scheduled_date": "2025-12-21",
+      "status": "pending",
+      "started_at": null,
+      "completed_at": null,
+      "created_at": "2025-12-21 09:26:36"
+    },
+    {
+      "id": 37,
+      "facility_id": 7,
+      "assigned_user_id": 14,
+      "scheduled_date": "2025-12-22",
+      "status": "pending",
+      "started_at": null,
+      "completed_at": null,
+      "created_at": "2025-12-21 09:26:36"
+    },
+    {
+      "id": 38,
+      "facility_id": 7,
+      "assigned_user_id": 14,
+      "scheduled_date": "2025-12-23",
+      "status": "pending",
+      "started_at": null,
+      "completed_at": null,
+      "created_at": "2025-12-21 09:26:36"
+    },
+    {
+      "id": 39,
+      "facility_id": 7,
+      "assigned_user_id": 14,
+      "scheduled_date": "2025-12-24",
+      "status": "pending",
+      "started_at": null,
+      "completed_at": null,
+      "created_at": "2025-12-21 09:26:37"
+    },
+    {
+      "id": 40,
+      "facility_id": 7,
+      "assigned_user_id": 14,
+      "scheduled_date": "2025-12-25",
+      "status": "pending",
+      "started_at": null,
+      "completed_at": null,
+      "created_at": "2025-12-21 09:26:37"
+    },
+    {
+      "id": 41,
+      "facility_id": 7,
+      "assigned_user_id": 14,
+      "scheduled_date": "2025-12-26",
+      "status": "pending",
+      "started_at": null,
+      "completed_at": null,
+      "created_at": "2025-12-21 09:26:37"
+    },
+    {
+      "id": 42,
+      "facility_id": 7,
+      "assigned_user_id": 14,
+      "scheduled_date": "2025-12-27",
+      "status": "pending",
+      "started_at": null,
+      "completed_at": null,
+      "created_at": "2025-12-21 09:26:37"
+    }
+  ],
+  "exportedAt": "2025-12-21T18:03:34.870Z"
+}

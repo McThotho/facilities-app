@@ -30,6 +30,7 @@ router.post('/login', (req, res) => {
     user: {
       id: user.id,
       username: user.username,
+      full_name: user.full_name,
       email: user.email,
       role: user.role,
       must_change_password: user.must_change_password === 1
@@ -39,8 +40,11 @@ router.post('/login', (req, res) => {
 
 // Get current user
 router.get('/me', authenticateToken, (req, res) => {
-  const user = db.prepare('SELECT id, username, email, role FROM users WHERE id = ?').get(req.user.id);
-  res.json(user);
+  const user = db.prepare('SELECT id, username, full_name, email, role, must_change_password FROM users WHERE id = ?').get(req.user.id);
+  res.json({
+    ...user,
+    must_change_password: user.must_change_password === 1
+  });
 });
 
 // Helper function to generate username from name and emp_id
@@ -75,9 +79,9 @@ router.post('/register', (req, res) => {
 
   try {
     const result = db.prepare(`
-      INSERT INTO users (emp_id, username, email, contact, password, role, must_change_password)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `).run(emp_id, generatedUsername, finalEmail, contact || null, hashedPassword, role, 1);
+      INSERT INTO users (emp_id, username, full_name, email, contact, password, role, must_change_password)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(emp_id, generatedUsername, providedName, finalEmail, contact || null, hashedPassword, role, 1);
 
     // If facility_id is provided, assign user to facility
     if (facility_id) {
@@ -113,6 +117,7 @@ router.get('/users', authenticateToken, (req, res) => {
       u.id,
       u.emp_id,
       u.username,
+      u.full_name,
       u.email,
       u.contact,
       u.role,

@@ -286,7 +286,8 @@ export default function StaffManagement() {
                     {u.emp_id || '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900 dark:text-white">{u.username}</div>
+                    <div className="text-sm font-medium text-gray-900 dark:text-white">{u.full_name || u.username}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">@{u.username}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                     {u.contact || '-'}

@@ -29,10 +29,22 @@ function initDatabase() {
   // Migration: Add must_change_password column if it doesn't exist (for existing databases)
   try {
     const tableInfo = db.prepare('PRAGMA table_info(users)').all();
-    const hasColumn = tableInfo.some(col => col.name === 'must_change_password');
-    if (!hasColumn) {
+    const hasPasswordColumn = tableInfo.some(col => col.name === 'must_change_password');
+    if (!hasPasswordColumn) {
       db.exec(`ALTER TABLE users ADD COLUMN must_change_password INTEGER DEFAULT 0`);
       console.log('✓ Migration: Added must_change_password column to existing database');
+    }
+  } catch (error) {
+    // Table doesn't exist yet, will be created above
+  }
+
+  // Migration: Add full_name column if it doesn't exist (for existing databases)
+  try {
+    const tableInfo = db.prepare('PRAGMA table_info(users)').all();
+    const hasFullNameColumn = tableInfo.some(col => col.name === 'full_name');
+    if (!hasFullNameColumn) {
+      db.exec(`ALTER TABLE users ADD COLUMN full_name TEXT`);
+      console.log('✓ Migration: Added full_name column to existing database');
     }
   } catch (error) {
     // Table doesn't exist yet, will be created above
