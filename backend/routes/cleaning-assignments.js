@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../database');
+const pool = require('../database');
 const { authenticateToken } = require('../middleware/auth');
 const multer = require('multer');
 const path = require('path');
@@ -65,7 +65,7 @@ const CHECKLIST_TEMPLATES = {
 };
 
 // Get assignments for a facility (with date range)
-router.get('/facility/:facilityId', authenticateToken, (req, res) => {
+router.get('/facility/:facilityId', authenticateToken, async (req, res) => {
   try {
     const { facilityId } = req.params;
     const { startDate, endDate } = req.query;
@@ -75,26 +75,26 @@ router.get('/facility/:facilityId', authenticateToken, (req, res) => {
         ca.*,
         u.username as cleaner_name,
         u.email as cleaner_email,
-        COUNT(CASE WHEN cci.is_completed = 1 THEN 1 END) as completed_items,
+        COUNT(CASE WHEN cci.is_completed = true THEN 1 END) as completed_items,
         COUNT(cci.id) as total_items
       FROM cleaning_assignments ca
       LEFT JOIN users u ON ca.assigned_user_id = u.id
       LEFT JOIN cleaning_checklist_items cci ON ca.id = cci.assignment_id
-      WHERE ca.facility_id = ?
+      WHERE ca.facility_id = $1
     `;
 
     const params = [facilityId];
 
     if (startDate && endDate) {
-      query += ` AND ca.scheduled_date BETWEEN ? AND ?`;
+      query += ` AND ca.scheduled_date BETWEEN $2 AND $3`;
       params.push(startDate, endDate);
     }
 
-    query += ` GROUP BY ca.id ORDER BY ca.scheduled_date DESC`;
+    query += ` GROUP BY ca.id, ca.facility_id, ca.assigned_user_id, ca.scheduled_date, ca.status, ca.started_at, ca.completed_at, ca.created_at, u.username, u.email ORDER BY ca.scheduled_date DESC`;
 
-    const assignments = db.prepare(query).all(...params);
+    const result = await pool.query(query, params);
 
-    res.json(assignments);
+    res.json(result.rows);
   } catch (error) {
     console.error('Error fetching assignments:', error);
     res.status(500).json({ error: 'Failed to fetch assignments' });
@@ -102,31 +102,33 @@ router.get('/facility/:facilityId', authenticateToken, (req, res) => {
 });
 
 // Get single assignment with checklist
-router.get('/:id', authenticateToken, (req, res) => {
+router.get('/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
 
-    const assignment = db.prepare(`
+    const assignmentResult = await pool.query(`
       SELECT
         ca.*,
         u.username as cleaner_name,
         u.email as cleaner_email
       FROM cleaning_assignments ca
       LEFT JOIN users u ON ca.assigned_user_id = u.id
-      WHERE ca.id = ?
-    `).get(id);
+      WHERE ca.id = $1
+    `, [id]);
+
+    const assignment = assignmentResult.rows[0];
 
     if (!assignment) {
       return res.status(404).json({ error: 'Assignment not found' });
     }
 
-    const checklist = db.prepare(`
+    const checklistResult = await pool.query(`
       SELECT * FROM cleaning_checklist_items
-      WHERE assignment_id = ?
+      WHERE assignment_id = $1
       ORDER BY area, id
-    `).all(id);
+    `, [id]);
 
-    res.json({ ...assignment, checklist });
+    res.json({ ...assignment, checklist: checklistResult.rows });
   } catch (error) {
     console.error('Error fetching assignment:', error);
     res.status(500).json({ error: 'Failed to fetch assignment' });
@@ -134,7 +136,7 @@ router.get('/:id', authenticateToken, (req, res) => {
 });
 
 // Create assignment (Manager/Admin only)
-router.post('/', authenticateToken, (req, res) => {
+router.post('/', authenticateToken, async (req, res) => {
   try {
     const { facilityId, assignedUserId, scheduledDate } = req.body;
 
@@ -144,48 +146,48 @@ router.post('/', authenticateToken, (req, res) => {
     }
 
     // Check if assignment already exists for this date
-    const existing = db.prepare(`
+    const existingResult = await pool.query(`
       SELECT id, assigned_user_id FROM cleaning_assignments
-      WHERE facility_id = ? AND scheduled_date = ?
-    `).get(facilityId, scheduledDate);
+      WHERE facility_id = $1 AND scheduled_date = $2
+    `, [facilityId, scheduledDate]);
 
+    const existing = existingResult.rows[0];
     let assignmentId;
 
     if (existing) {
       // Override: Update existing assignment with new user
-      db.prepare(`
+      await pool.query(`
         UPDATE cleaning_assignments
-        SET assigned_user_id = ?
-        WHERE id = ?
-      `).run(assignedUserId, existing.id);
+        SET assigned_user_id = $1
+        WHERE id = $2
+      `, [assignedUserId, existing.id]);
 
       assignmentId = existing.id;
     } else {
       // Create new assignment
-      const result = db.prepare(`
+      const result = await pool.query(`
         INSERT INTO cleaning_assignments (facility_id, assigned_user_id, scheduled_date)
-        VALUES (?, ?, ?)
-      `).run(facilityId, assignedUserId, scheduledDate);
+        VALUES ($1, $2, $3)
+        RETURNING id
+      `, [facilityId, assignedUserId, scheduledDate]);
 
-      assignmentId = result.lastInsertRowid;
+      assignmentId = result.rows[0].id;
     }
 
     // Create checklist items from templates (only if new assignment)
     if (!existing) {
-      const insertChecklist = db.prepare(`
-        INSERT INTO cleaning_checklist_items (assignment_id, area, task_name)
-        VALUES (?, ?, ?)
-      `);
-
-      Object.entries(CHECKLIST_TEMPLATES).forEach(([area, tasks]) => {
-        tasks.forEach(taskName => {
-          insertChecklist.run(assignmentId, area, taskName);
-        });
-      });
+      for (const [area, tasks] of Object.entries(CHECKLIST_TEMPLATES)) {
+        for (const taskName of tasks) {
+          await pool.query(`
+            INSERT INTO cleaning_checklist_items (assignment_id, area, task_name)
+            VALUES ($1, $2, $3)
+          `, [assignmentId, area, taskName]);
+        }
+      }
     }
 
     // Fetch the created assignment
-    const assignment = db.prepare(`
+    const assignmentResult = await pool.query(`
       SELECT
         ca.*,
         u.username as cleaner_name,
@@ -193,11 +195,11 @@ router.post('/', authenticateToken, (req, res) => {
       FROM cleaning_assignments ca
       LEFT JOIN users u ON ca.assigned_user_id = u.id
       LEFT JOIN cleaning_checklist_items cci ON ca.id = cci.assignment_id
-      WHERE ca.id = ?
-      GROUP BY ca.id
-    `).get(assignmentId);
+      WHERE ca.id = $1
+      GROUP BY ca.id, ca.facility_id, ca.assigned_user_id, ca.scheduled_date, ca.status, ca.started_at, ca.completed_at, ca.created_at, u.username
+    `, [assignmentId]);
 
-    res.status(201).json(assignment);
+    res.status(201).json(assignmentResult.rows[0]);
   } catch (error) {
     console.error('Error creating assignment:', error);
     res.status(500).json({ error: 'Failed to create assignment' });
@@ -205,7 +207,7 @@ router.post('/', authenticateToken, (req, res) => {
 });
 
 // Auto-assign cleaners for next 7 days (Manager/Admin only)
-router.post('/auto-assign/:facilityId', authenticateToken, (req, res) => {
+router.post('/auto-assign/:facilityId', authenticateToken, async (req, res) => {
   try {
     const { facilityId } = req.params;
 
@@ -215,26 +217,30 @@ router.post('/auto-assign/:facilityId', authenticateToken, (req, res) => {
     }
 
     // Get users assigned to this facility
-    const users = db.prepare(`
+    const usersResult = await pool.query(`
       SELECT u.id, u.username
       FROM users u
       INNER JOIN user_facilities uf ON u.id = uf.user_id
-      WHERE uf.facility_id = ? AND u.role = 'User'
+      WHERE uf.facility_id = $1 AND u.role = 'User'
       ORDER BY u.id
-    `).all(facilityId);
+    `, [facilityId]);
+
+    const users = usersResult.rows;
 
     if (users.length === 0) {
       return res.status(400).json({ error: 'No users assigned to this facility' });
     }
 
     // Find the last assigned user to continue rotation from there
-    const lastAssignment = db.prepare(`
+    const lastAssignmentResult = await pool.query(`
       SELECT assigned_user_id
       FROM cleaning_assignments
-      WHERE facility_id = ?
+      WHERE facility_id = $1
       ORDER BY scheduled_date DESC
       LIMIT 1
-    `).get(facilityId);
+    `, [facilityId]);
+
+    const lastAssignment = lastAssignmentResult.rows[0];
 
     // Determine starting index for rotation
     let startIndex = 0;
@@ -255,35 +261,34 @@ router.post('/auto-assign/:facilityId', authenticateToken, (req, res) => {
       const scheduledDate = date.toISOString().split('T')[0];
 
       // Check if assignment already exists
-      const existing = db.prepare(`
+      const existingResult = await pool.query(`
         SELECT id FROM cleaning_assignments
-        WHERE facility_id = ? AND scheduled_date = ?
-      `).get(facilityId, scheduledDate);
+        WHERE facility_id = $1 AND scheduled_date = $2
+      `, [facilityId, scheduledDate]);
 
-      if (!existing) {
+      if (existingResult.rows.length === 0) {
         // Round-robin assignment starting from where we left off
         const userIndex = (startIndex + assignmentCount) % users.length;
         const assignedUser = users[userIndex];
         assignmentCount++; // Increment after using
 
-        const result = db.prepare(`
+        const result = await pool.query(`
           INSERT INTO cleaning_assignments (facility_id, assigned_user_id, scheduled_date)
-          VALUES (?, ?, ?)
-        `).run(facilityId, assignedUser.id, scheduledDate);
+          VALUES ($1, $2, $3)
+          RETURNING id
+        `, [facilityId, assignedUser.id, scheduledDate]);
 
-        const assignmentId = result.lastInsertRowid;
+        const assignmentId = result.rows[0].id;
 
         // Create checklist items
-        const insertChecklist = db.prepare(`
-          INSERT INTO cleaning_checklist_items (assignment_id, area, task_name)
-          VALUES (?, ?, ?)
-        `);
-
-        Object.entries(CHECKLIST_TEMPLATES).forEach(([area, tasks]) => {
-          tasks.forEach(taskName => {
-            insertChecklist.run(assignmentId, area, taskName);
-          });
-        });
+        for (const [area, tasks] of Object.entries(CHECKLIST_TEMPLATES)) {
+          for (const taskName of tasks) {
+            await pool.query(`
+              INSERT INTO cleaning_checklist_items (assignment_id, area, task_name)
+              VALUES ($1, $2, $3)
+            `, [assignmentId, area, taskName]);
+          }
+        }
 
         assignments.push({
           id: assignmentId,
@@ -301,12 +306,13 @@ router.post('/auto-assign/:facilityId', authenticateToken, (req, res) => {
 });
 
 // Update assignment status
-router.patch('/:id/status', authenticateToken, (req, res) => {
+router.patch('/:id/status', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
 
-    const assignment = db.prepare('SELECT * FROM cleaning_assignments WHERE id = ?').get(id);
+    const assignmentResult = await pool.query('SELECT * FROM cleaning_assignments WHERE id = $1', [id]);
+    const assignment = assignmentResult.rows[0];
 
     if (!assignment) {
       return res.status(404).json({ error: 'Assignment not found' });
@@ -317,17 +323,16 @@ router.patch('/:id/status', authenticateToken, (req, res) => {
       return res.status(403).json({ error: 'You can only update your own assignments' });
     }
 
-    const updates = { status };
     if (status === 'in_progress' && !assignment.started_at) {
-      db.prepare(`UPDATE cleaning_assignments SET status = ?, started_at = CURRENT_TIMESTAMP WHERE id = ?`).run(status, id);
+      await pool.query(`UPDATE cleaning_assignments SET status = $1, started_at = CURRENT_TIMESTAMP WHERE id = $2`, [status, id]);
     } else if (status === 'completed') {
-      db.prepare(`UPDATE cleaning_assignments SET status = ?, completed_at = CURRENT_TIMESTAMP WHERE id = ?`).run(status, id);
+      await pool.query(`UPDATE cleaning_assignments SET status = $1, completed_at = CURRENT_TIMESTAMP WHERE id = $2`, [status, id]);
     } else {
-      db.prepare(`UPDATE cleaning_assignments SET status = ? WHERE id = ?`).run(status, id);
+      await pool.query(`UPDATE cleaning_assignments SET status = $1 WHERE id = $2`, [status, id]);
     }
 
-    const updated = db.prepare('SELECT * FROM cleaning_assignments WHERE id = ?').get(id);
-    res.json(updated);
+    const updatedResult = await pool.query('SELECT * FROM cleaning_assignments WHERE id = $1', [id]);
+    res.json(updatedResult.rows[0]);
   } catch (error) {
     console.error('Error updating status:', error);
     res.status(500).json({ error: 'Failed to update status' });
@@ -335,16 +340,18 @@ router.patch('/:id/status', authenticateToken, (req, res) => {
 });
 
 // Toggle checklist item
-router.patch('/checklist/:itemId/toggle', authenticateToken, (req, res) => {
+router.patch('/checklist/:itemId/toggle', authenticateToken, async (req, res) => {
   try {
     const { itemId } = req.params;
 
-    const item = db.prepare(`
+    const itemResult = await pool.query(`
       SELECT cci.*, ca.assigned_user_id
       FROM cleaning_checklist_items cci
       JOIN cleaning_assignments ca ON cci.assignment_id = ca.id
-      WHERE cci.id = ?
-    `).get(itemId);
+      WHERE cci.id = $1
+    `, [itemId]);
+
+    const item = itemResult.rows[0];
 
     if (!item) {
       return res.status(404).json({ error: 'Checklist item not found' });
@@ -358,21 +365,21 @@ router.patch('/checklist/:itemId/toggle', authenticateToken, (req, res) => {
     const newStatus = !item.is_completed;
 
     if (newStatus) {
-      db.prepare(`
+      await pool.query(`
         UPDATE cleaning_checklist_items
-        SET is_completed = 1, completed_at = CURRENT_TIMESTAMP
-        WHERE id = ?
-      `).run(itemId);
+        SET is_completed = true, completed_at = CURRENT_TIMESTAMP
+        WHERE id = $1
+      `, [itemId]);
     } else {
-      db.prepare(`
+      await pool.query(`
         UPDATE cleaning_checklist_items
-        SET is_completed = 0, completed_at = NULL, photo_url = NULL
-        WHERE id = ?
-      `).run(itemId);
+        SET is_completed = false, completed_at = NULL, photo_url = NULL
+        WHERE id = $1
+      `, [itemId]);
     }
 
-    const updated = db.prepare('SELECT * FROM cleaning_checklist_items WHERE id = ?').get(itemId);
-    res.json(updated);
+    const updatedResult = await pool.query('SELECT * FROM cleaning_checklist_items WHERE id = $1', [itemId]);
+    res.json(updatedResult.rows[0]);
   } catch (error) {
     console.error('Error toggling checklist item:', error);
     res.status(500).json({ error: 'Failed to toggle checklist item' });
@@ -380,7 +387,7 @@ router.patch('/checklist/:itemId/toggle', authenticateToken, (req, res) => {
 });
 
 // Upload photo for checklist item
-router.post('/checklist/:itemId/photo', authenticateToken, upload.single('photo'), (req, res) => {
+router.post('/checklist/:itemId/photo', authenticateToken, upload.single('photo'), async (req, res) => {
   try {
     const { itemId } = req.params;
 
@@ -388,12 +395,14 @@ router.post('/checklist/:itemId/photo', authenticateToken, upload.single('photo'
       return res.status(400).json({ error: 'Photo is required' });
     }
 
-    const item = db.prepare(`
+    const itemResult = await pool.query(`
       SELECT cci.*, ca.assigned_user_id
       FROM cleaning_checklist_items cci
       JOIN cleaning_assignments ca ON cci.assignment_id = ca.id
-      WHERE cci.id = ?
-    `).get(itemId);
+      WHERE cci.id = $1
+    `, [itemId]);
+
+    const item = itemResult.rows[0];
 
     if (!item) {
       return res.status(404).json({ error: 'Checklist item not found' });
@@ -406,14 +415,14 @@ router.post('/checklist/:itemId/photo', authenticateToken, upload.single('photo'
 
     const photoUrl = `/uploads/cleaning/${req.file.filename}`;
 
-    db.prepare(`
+    await pool.query(`
       UPDATE cleaning_checklist_items
-      SET photo_url = ?, is_completed = 1, completed_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `).run(photoUrl, itemId);
+      SET photo_url = $1, is_completed = true, completed_at = CURRENT_TIMESTAMP
+      WHERE id = $2
+    `, [photoUrl, itemId]);
 
-    const updated = db.prepare('SELECT * FROM cleaning_checklist_items WHERE id = ?').get(itemId);
-    res.json(updated);
+    const updatedResult = await pool.query('SELECT * FROM cleaning_checklist_items WHERE id = $1', [itemId]);
+    res.json(updatedResult.rows[0]);
   } catch (error) {
     console.error('Error uploading photo:', error);
     res.status(500).json({ error: 'Failed to upload photo' });

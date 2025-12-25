@@ -1,24 +1,24 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../database');
+const pool = require('../database');
 const { authenticateToken } = require('../middleware/auth');
 
 // Get all grievances for a facility
-router.get('/facility/:facilityId', authenticateToken, (req, res) => {
+router.get('/facility/:facilityId', authenticateToken, async (req, res) => {
   try {
     const { facilityId } = req.params;
-    const grievances = db.prepare(`
+    const result = await pool.query(`
       SELECT g.*,
              u1.username as requester_name,
              u2.username as picker_name
       FROM grievances g
       LEFT JOIN users u1 ON g.requester_id = u1.id
       LEFT JOIN users u2 ON g.picker_id = u2.id
-      WHERE g.facility_id = ?
+      WHERE g.facility_id = $1
       ORDER BY g.created_at DESC
-    `).all(facilityId);
+    `, [facilityId]);
 
-    res.json(grievances);
+    res.json(result.rows);
   } catch (error) {
     console.error('Error fetching grievances:', error);
     res.status(500).json({ error: 'Failed to fetch grievances' });
@@ -26,27 +26,28 @@ router.get('/facility/:facilityId', authenticateToken, (req, res) => {
 });
 
 // Create a new grievance
-router.post('/', authenticateToken, (req, res) => {
+router.post('/', authenticateToken, async (req, res) => {
   try {
     const { facilityId, category, remarks } = req.body;
     const requesterId = req.user.id;
 
-    const result = db.prepare(`
+    const result = await pool.query(`
       INSERT INTO grievances (facility_id, requester_id, category, remarks, status)
-      VALUES (?, ?, ?, ?, 'pending')
-    `).run(facilityId, requesterId, category, remarks);
+      VALUES ($1, $2, $3, $4, 'pending')
+      RETURNING id
+    `, [facilityId, requesterId, category, remarks]);
 
-    const grievance = db.prepare(`
+    const grievanceResult = await pool.query(`
       SELECT g.*,
              u1.username as requester_name,
              u2.username as picker_name
       FROM grievances g
       LEFT JOIN users u1 ON g.requester_id = u1.id
       LEFT JOIN users u2 ON g.picker_id = u2.id
-      WHERE g.id = ?
-    `).get(result.lastInsertRowid);
+      WHERE g.id = $1
+    `, [result.rows[0].id]);
 
-    res.status(201).json(grievance);
+    res.status(201).json(grievanceResult.rows[0]);
   } catch (error) {
     console.error('Error creating grievance:', error);
     res.status(500).json({ error: 'Failed to create grievance' });
@@ -54,7 +55,7 @@ router.post('/', authenticateToken, (req, res) => {
 });
 
 // Pick a grievance (Manager/Admin only)
-router.post('/:id/pick', authenticateToken, (req, res) => {
+router.post('/:id/pick', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const pickerId = req.user.id;
@@ -64,23 +65,23 @@ router.post('/:id/pick', authenticateToken, (req, res) => {
       return res.status(403).json({ error: 'Only managers and administrators can pick grievances' });
     }
 
-    db.prepare(`
+    await pool.query(`
       UPDATE grievances
-      SET picker_id = ?, status = 'picked', picked_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `).run(pickerId, id);
+      SET picker_id = $1, status = 'picked', picked_at = CURRENT_TIMESTAMP
+      WHERE id = $2
+    `, [pickerId, id]);
 
-    const grievance = db.prepare(`
+    const grievanceResult = await pool.query(`
       SELECT g.*,
              u1.username as requester_name,
              u2.username as picker_name
       FROM grievances g
       LEFT JOIN users u1 ON g.requester_id = u1.id
       LEFT JOIN users u2 ON g.picker_id = u2.id
-      WHERE g.id = ?
-    `).get(id);
+      WHERE g.id = $1
+    `, [id]);
 
-    res.json(grievance);
+    res.json(grievanceResult.rows[0]);
   } catch (error) {
     console.error('Error picking grievance:', error);
     res.status(500).json({ error: 'Failed to pick grievance' });
@@ -88,13 +89,14 @@ router.post('/:id/pick', authenticateToken, (req, res) => {
 });
 
 // Update grievance status
-router.patch('/:id/status', authenticateToken, (req, res) => {
+router.patch('/:id/status', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
 
     // Only picker or admin can update status
-    const grievance = db.prepare('SELECT * FROM grievances WHERE id = ?').get(id);
+    const grievanceResult = await pool.query('SELECT * FROM grievances WHERE id = $1', [id]);
+    const grievance = grievanceResult.rows[0];
 
     if (!grievance) {
       return res.status(404).json({ error: 'Grievance not found' });
@@ -104,26 +106,25 @@ router.patch('/:id/status', authenticateToken, (req, res) => {
       return res.status(403).json({ error: 'You can only update grievances you have picked' });
     }
 
-    const updates = { status };
     if (status === 'working') {
-      db.prepare(`UPDATE grievances SET status = ?, started_at = CURRENT_TIMESTAMP WHERE id = ?`).run(status, id);
+      await pool.query(`UPDATE grievances SET status = $1, started_at = CURRENT_TIMESTAMP WHERE id = $2`, [status, id]);
     } else if (status === 'completed') {
-      db.prepare(`UPDATE grievances SET status = ?, completed_at = CURRENT_TIMESTAMP WHERE id = ?`).run(status, id);
+      await pool.query(`UPDATE grievances SET status = $1, completed_at = CURRENT_TIMESTAMP WHERE id = $2`, [status, id]);
     } else {
-      db.prepare(`UPDATE grievances SET status = ? WHERE id = ?`).run(status, id);
+      await pool.query(`UPDATE grievances SET status = $1 WHERE id = $2`, [status, id]);
     }
 
-    const updatedGrievance = db.prepare(`
+    const updatedGrievanceResult = await pool.query(`
       SELECT g.*,
              u1.username as requester_name,
              u2.username as picker_name
       FROM grievances g
       LEFT JOIN users u1 ON g.requester_id = u1.id
       LEFT JOIN users u2 ON g.picker_id = u2.id
-      WHERE g.id = ?
-    `).get(id);
+      WHERE g.id = $1
+    `, [id]);
 
-    res.json(updatedGrievance);
+    res.json(updatedGrievanceResult.rows[0]);
   } catch (error) {
     console.error('Error updating grievance:', error);
     res.status(500).json({ error: 'Failed to update grievance' });
