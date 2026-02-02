@@ -3,32 +3,16 @@ const router = express.Router();
 const pool = require('../database');
 const { authenticateToken } = require('../middleware/auth');
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
+const { put } = require('@vercel/blob');
 
-// Multer configuration for photo uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '../uploads/cleaning');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'cleaning-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
+// Use memory storage for multer (works in serverless)
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
   fileFilter: (req, file, cb) => {
     const allowedTypes = /jpeg|jpg|png|webp/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
     const mimetype = allowedTypes.test(file.mimetype);
-    if (mimetype && extname) {
+    if (mimetype) {
       return cb(null, true);
     }
     cb(new Error('Only image files are allowed'));
@@ -413,13 +397,14 @@ router.post('/checklist/:itemId/photo', authenticateToken, upload.single('photo'
       return res.status(403).json({ error: 'You can only upload to your own checklist' });
     }
 
-    const photoUrl = `/uploads/cleaning/${req.file.filename}`;
+    const filename = `cleaning/checklist-${Date.now()}-${Math.round(Math.random() * 1E9)}.${req.file.mimetype.split('/')[1]}`;
+    const blob = await put(filename, req.file.buffer, { access: 'public' });
 
     await pool.query(`
       UPDATE cleaning_checklist_items
       SET photo_url = $1, is_completed = true, completed_at = CURRENT_TIMESTAMP
       WHERE id = $2
-    `, [photoUrl, itemId]);
+    `, [blob.url, itemId]);
 
     const updatedResult = await pool.query('SELECT * FROM cleaning_checklist_items WHERE id = $1', [itemId]);
     res.json(updatedResult.rows[0]);

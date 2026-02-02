@@ -1,34 +1,21 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const path = require('path');
+const { put } = require('@vercel/blob');
 const pool = require('../database');
 const { authenticateToken } = require('../middleware/auth');
 
-// Configure multer for photo uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/');
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'cleaning-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
+// Use memory storage for multer (works in serverless)
 const upload = multer({
-  storage: storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
   fileFilter: (req, file, cb) => {
     const allowedTypes = /jpeg|jpg|png|webp/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
     const mimetype = allowedTypes.test(file.mimetype);
-
-    if (mimetype && extname) {
+    if (mimetype) {
       return cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed'));
     }
+    cb(new Error('Only image files are allowed'));
   }
 });
 
@@ -101,18 +88,19 @@ router.post('/:id/complete', authenticateToken, upload.single('photo'), async (r
     return res.status(400).json({ error: 'Photo is required to complete cleaning task' });
   }
 
-  const photoUrl = '/uploads/' + req.file.filename;
-
   try {
+    const filename = `cleaning/cleaning-${Date.now()}-${Math.round(Math.random() * 1E9)}.${req.file.mimetype.split('/')[1]}`;
+    const blob = await put(filename, req.file.buffer, { access: 'public' });
+
     await pool.query(`
       UPDATE cleaning_tasks
       SET status = 'completed', photo_url = $1, completed_at = CURRENT_TIMESTAMP
       WHERE id = $2
-    `, [photoUrl, req.params.id]);
+    `, [blob.url, req.params.id]);
 
     res.json({
       message: 'Cleaning task completed successfully',
-      photoUrl
+      photoUrl: blob.url
     });
   } catch (error) {
     console.error('Complete cleaning task error:', error);

@@ -21,7 +21,10 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Static uploads only for local dev; in production, photos use Vercel Blob URLs
+if (process.env.NODE_ENV !== 'production') {
+  app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+}
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -38,6 +41,11 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Facilities Management API is running' });
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`);
-});
+// Only listen when run directly (not when imported by Vercel serverless)
+if (require.main === module) {
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+
+module.exports = app;
