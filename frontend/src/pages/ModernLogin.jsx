@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Building2, Sparkles, Lock, User } from 'lucide-react';
@@ -8,8 +8,17 @@ export default function ModernLogin() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [mousePos, setMousePos] = useState({ x: -200, y: -200 });
+  const containerRef = useRef(null);
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  const handleMouseMove = useCallback((e) => {
+    if (containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      setMousePos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+    }
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -27,7 +36,23 @@ export default function ModernLogin() {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900">
+    <div
+      ref={containerRef}
+      onMouseMove={handleMouseMove}
+      className="min-h-screen relative overflow-hidden bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900"
+    >
+      {/* Mouse-tracking Glow */}
+      <div
+        className="pointer-events-none absolute z-0 rounded-full blur-3xl transition-opacity duration-300"
+        style={{
+          width: 400,
+          height: 400,
+          left: mousePos.x - 200,
+          top: mousePos.y - 200,
+          background: 'radial-gradient(circle, rgba(59,130,246,0.35) 0%, rgba(139,92,246,0.2) 40%, transparent 70%)',
+        }}
+      />
+
       {/* Animated Background */}
       <div className="absolute inset-0">
         {/* Gradient Orbs */}
