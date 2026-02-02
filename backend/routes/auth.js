@@ -214,6 +214,32 @@ router.delete('/users/:id', authenticateToken, async (req, res) => {
   }
 });
 
+// Reset user password to default (Admin/Manager only)
+router.post('/users/:id/reset-password', authenticateToken, async (req, res) => {
+  if (!['Administrator', 'Manager'].includes(req.user.role)) {
+    return res.status(403).json({ error: 'Insufficient permissions' });
+  }
+
+  const { id } = req.params;
+
+  try {
+    const hashedPassword = bcrypt.hashSync('welcome123', 10);
+    const result = await pool.query(
+      'UPDATE users SET password = $1, must_change_password = 1 WHERE id = $2',
+      [hashedPassword, id]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json({ message: 'Password reset to default successfully' });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({ error: 'Failed to reset password' });
+  }
+});
+
 // Change password
 router.post('/change-password', authenticateToken, async (req, res) => {
   const { currentPassword, newPassword } = req.body;

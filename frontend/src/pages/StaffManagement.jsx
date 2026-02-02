@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { authAPI, facilitiesAPI } from '../utils/api';
-import { Users, Plus, Edit2, Trash2, Search } from 'lucide-react';
+import { Users, Plus, Edit2, Trash2, Search, KeyRound } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function StaffManagement() {
@@ -69,6 +69,18 @@ export default function StaffManagement() {
     } catch (error) {
       console.error('Failed to update user:', error);
       alert(error.response?.data?.error || 'Failed to update user');
+    }
+  };
+
+  const handleResetPassword = async (userId, username) => {
+    if (!confirm(`Are you sure you want to reset the password for "${username}" to the default (welcome123)?`)) return;
+
+    try {
+      await authAPI.resetPassword(userId);
+      alert(`Password for "${username}" has been reset to "welcome123".\nThey will be required to change it on next login.`);
+    } catch (error) {
+      console.error('Failed to reset password:', error);
+      alert(error.response?.data?.error || 'Failed to reset password');
     }
   };
 
@@ -312,6 +324,13 @@ export default function StaffManagement() {
                         title="Edit"
                       >
                         <Edit2 size={18} />
+                      </button>
+                      <button
+                        onClick={() => handleResetPassword(u.id, u.full_name || u.username)}
+                        className="text-yellow-600 dark:text-yellow-400 hover:text-yellow-900 dark:hover:text-yellow-300 mr-3"
+                        title="Reset Password"
+                      >
+                        <KeyRound size={18} />
                       </button>
                       <button
                         onClick={() => handleDeleteUser(u.id)}
