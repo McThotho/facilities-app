@@ -123,27 +123,29 @@ export default function ModernCleaningSchedule({ facilityId }) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center space-x-2">
-          <span className="text-2xl">🧹</span>
-          <span className="text-sm text-gray-500 dark:text-gray-400">Cleaning Schedule</span>
+          <span className="text-xl sm:text-2xl">🧹</span>
+          <span className="text-sm text-gray-500 dark:text-gray-400 hidden sm:inline">Cleaning Schedule</span>
         </div>
 
         {isManager && (
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-2">
             <button
               onClick={() => setShowManualAssign(!showManualAssign)}
-              className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition shadow-lg"
+              className="flex items-center justify-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition shadow-lg text-sm flex-1 sm:flex-none"
             >
-              <UserPlus size={18} />
-              <span>Manual Assign</span>
+              <UserPlus size={16} />
+              <span className="hidden sm:inline">Manual Assign</span>
+              <span className="sm:hidden">Assign</span>
             </button>
             <button
               onClick={handleAutoAssign}
-              className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition shadow-lg"
+              className="flex items-center justify-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition shadow-lg text-sm flex-1 sm:flex-none"
             >
-              <Sparkles size={18} />
-              <span>Auto-Assign 7 Days</span>
+              <Sparkles size={16} />
+              <span className="hidden sm:inline">Auto-Assign 7 Days</span>
+              <span className="sm:hidden">Auto 7d</span>
             </button>
           </div>
         )}
@@ -221,7 +223,7 @@ export default function ModernCleaningSchedule({ facilityId }) {
               return (
                 <div
                   key={dateStr}
-                  className={`p-4 rounded-lg border-2 transition-all ${
+                  className={`p-3 sm:p-4 rounded-lg border-2 transition-all ${
                     assignment
                       ? getStatusColor(assignment.status, assignment.completed_items, assignment.total_items)
                       : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700'
@@ -230,48 +232,51 @@ export default function ModernCleaningSchedule({ facilityId }) {
                   }`}
                   onClick={() => assignment && handleAssignmentClick(assignment)}
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center space-x-2 sm:space-x-3 min-w-0">
                       {/* Date */}
-                      <div className="text-center">
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                      <div className="text-center flex-shrink-0 w-10 sm:w-auto">
+                        <div className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
                           {format(date, 'EEE')}
                         </div>
-                        <div className={`text-lg font-bold ${isToday ? 'text-blue-600 dark:text-blue-400' : 'text-gray-800 dark:text-white'}`}>
+                        <div className={`text-base sm:text-lg font-bold ${isToday ? 'text-blue-600 dark:text-blue-400' : 'text-gray-800 dark:text-white'}`}>
                           {format(date, 'dd')}
                         </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                        <div className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
                           {format(date, 'MMM')}
                         </div>
                       </div>
 
                       {/* Cleaner Info */}
-                      <div className="border-l-2 border-gray-300 dark:border-gray-600 pl-3">
+                      <div className="border-l-2 border-gray-300 dark:border-gray-600 pl-2 sm:pl-3 min-w-0">
                         {assignment ? (
                           <>
-                            <div className="flex items-center space-x-2">
-                              <User size={16} className="text-gray-600 dark:text-gray-400" />
-                              <span className="font-medium text-gray-800 dark:text-white">
+                            <div className="flex items-center space-x-1 sm:space-x-2">
+                              <User size={14} className="text-gray-600 dark:text-gray-400 flex-shrink-0 hidden sm:block" />
+                              <span className="font-medium text-gray-800 dark:text-white text-sm sm:text-base truncate">
                                 {assignment.cleaner_name}
                               </span>
-                              {getStatusIcon(assignment.status)}
+                              <span className="flex-shrink-0">{getStatusIcon(assignment.status)}</span>
                             </div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                              {assignment.completed_items} / {assignment.total_items} tasks
+                            <div className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 sm:mt-1">
+                              {assignment.completed_items}/{assignment.total_items} tasks
                             </div>
                           </>
                         ) : (
-                          <div className="text-sm text-gray-400 dark:text-gray-500 italic">
-                            No cleaner assigned
+                          <div className="text-xs sm:text-sm text-gray-400 dark:text-gray-500 italic">
+                            Not assigned
                           </div>
                         )}
                       </div>
                     </div>
 
-                    {/* Progress Bar */}
+                    {/* Progress Bar - hidden on very small screens, show percentage only */}
                     {assignment && (
-                      <div className="flex items-center space-x-3">
-                        <div className="w-24">
+                      <div className="flex items-center flex-shrink-0">
+                        {/* Mobile: just percentage */}
+                        <span className="sm:hidden text-xs font-medium text-gray-600 dark:text-gray-400">{progress}%</span>
+                        {/* Desktop: full progress bar */}
+                        <div className="hidden sm:block w-20 lg:w-24">
                           <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400 mb-1">
                             <span>Progress</span>
                             <span>{progress}%</span>
@@ -298,11 +303,11 @@ export default function ModernCleaningSchedule({ facilityId }) {
           </div>
         </div>
 
-        {/* Right: Calendar & Stats */}
+        {/* Right: Calendar & Stats - show date picker inline on mobile */}
         <div className="space-y-4">
-          {/* Calendar Picker */}
-          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-4 rounded-lg">
-            <h4 className="text-sm font-semibold text-gray-800 dark:text-white mb-3 flex items-center space-x-2">
+          {/* Calendar Picker - always visible but compact on mobile */}
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-3 sm:p-4 rounded-lg">
+            <h4 className="text-sm font-semibold text-gray-800 dark:text-white mb-2 sm:mb-3 flex items-center space-x-2">
               <Calendar size={16} />
               <span>View Date</span>
             </h4>
@@ -310,15 +315,15 @@ export default function ModernCleaningSchedule({ facilityId }) {
               type="date"
               value={format(selectedDate, 'yyyy-MM-dd')}
               onChange={(e) => setSelectedDate(new Date(e.target.value))}
-              className="w-full px-3 py-2 bg-blue-50 dark:bg-blue-900/20 text-gray-900 dark:text-white border border-blue-200 dark:border-blue-800 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 bg-blue-50 dark:bg-blue-900/20 text-gray-900 dark:text-white border border-blue-200 dark:border-blue-800 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
             />
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 hidden sm:block">
               Select a date to view the 7-day schedule starting from that day
             </p>
           </div>
 
-          {/* Facility Users */}
-          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-4 rounded-lg">
+          {/* Facility Users - hidden on mobile */}
+          <div className="hidden lg:block bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-4 rounded-lg">
             <h4 className="text-sm font-semibold text-gray-800 dark:text-white mb-3 flex items-center space-x-2">
               <Users size={16} />
               <span>Available Cleaners ({facilityUsers.length})</span>
@@ -345,19 +350,19 @@ export default function ModernCleaningSchedule({ facilityId }) {
             </div>
           </div>
 
-          {/* Legend */}
-          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-4 rounded-lg">
-            <h4 className="text-sm font-semibold text-gray-800 dark:text-white mb-3">Status Legend</h4>
-            <div className="space-y-2 text-xs">
-              <div className="flex items-center space-x-2">
+          {/* Legend - compact on mobile */}
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-3 sm:p-4 rounded-lg">
+            <h4 className="text-sm font-semibold text-gray-800 dark:text-white mb-2 sm:mb-3">Legend</h4>
+            <div className="flex flex-wrap gap-3 sm:flex-col sm:space-y-2 sm:gap-0 text-xs">
+              <div className="flex items-center space-x-1 sm:space-x-2">
                 <Clock size={14} className="text-gray-500" />
                 <span className="text-gray-600 dark:text-gray-400">Pending</span>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-1 sm:space-x-2">
                 <PlayCircle size={14} className="text-blue-500" />
                 <span className="text-gray-600 dark:text-gray-400">In Progress</span>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-1 sm:space-x-2">
                 <CheckCircle size={14} className="text-green-500" />
                 <span className="text-gray-600 dark:text-gray-400">Completed</span>
               </div>

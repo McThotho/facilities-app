@@ -76,23 +76,23 @@ export default function FacilityDetail() {
           </div>
         </div>
 
-        {/* Quick Stats */}
+        {/* Quick Stats - responsive grid */}
         {stats && (
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
             <StatCard
-              title="Visit Completion"
+              title="Visits"
               value={`${stats.visits.completed_visits || 0}/${stats.visits.total_visits || 0}`}
-              subtitle="Last 30 days"
+              subtitle="30 days"
             />
             <StatCard
-              title="Cleaning Tasks"
+              title="Cleaning"
               value={`${stats.cleaning.completed_tasks || 0}/${stats.cleaning.total_tasks || 0}`}
-              subtitle="Completed/Total"
+              subtitle="Done/Total"
             />
             <StatCard
-              title="Recent Messages"
+              title="Messages"
               value={stats.recentMessages || 0}
-              subtitle="Last 7 days"
+              subtitle="7 days"
             />
           </div>
         )}
@@ -101,33 +101,33 @@ export default function FacilityDetail() {
       {/* Tabs - Full Height */}
       <div className="flex-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm overflow-hidden flex flex-col">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full">
-          <TabsList className="border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 px-6">
-            <TabsTrigger value="cleaning">Today's Cleaning</TabsTrigger>
+          <TabsList className="border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 px-2 sm:px-6 overflow-x-auto flex-nowrap">
+            <TabsTrigger value="cleaning">Cleaning</TabsTrigger>
             {/* Schedule Visits - Admin only */}
             {user?.role === 'Administrator' && (
-              <TabsTrigger value="visits">Schedule Visits</TabsTrigger>
+              <TabsTrigger value="visits">Visits</TabsTrigger>
             )}
             <TabsTrigger value="grievances">Grievances</TabsTrigger>
-            <TabsTrigger value="chat">Team Chat</TabsTrigger>
+            <TabsTrigger value="chat">Chat</TabsTrigger>
           </TabsList>
 
           <div className="flex-1 overflow-hidden">
-            <TabsContent value="cleaning" className="h-full overflow-y-auto p-6">
+            <TabsContent value="cleaning" className="h-full overflow-y-auto p-3 sm:p-6">
               <ModernCleaningSchedule facilityId={id} />
             </TabsContent>
 
             {/* Schedule Visits - Admin only */}
             {user?.role === 'Administrator' && (
-              <TabsContent value="visits" className="h-full overflow-y-auto p-6">
+              <TabsContent value="visits" className="h-full overflow-y-auto p-3 sm:p-6">
                 <ScheduleVisits facilityId={id} />
               </TabsContent>
             )}
 
-            <TabsContent value="grievances" className="h-full overflow-y-auto p-6">
+            <TabsContent value="grievances" className="h-full overflow-y-auto p-3 sm:p-6">
               <Grievances facilityId={id} />
             </TabsContent>
 
-            <TabsContent value="chat" className="h-full overflow-y-auto p-6">
+            <TabsContent value="chat" className="h-full overflow-y-auto p-3 sm:p-6">
               <FacilityChat facilityId={id} />
             </TabsContent>
           </div>
@@ -139,10 +139,10 @@ export default function FacilityDetail() {
 
 function StatCard({ title, value, subtitle }) {
   return (
-    <div className="bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700/50 p-3 rounded-lg hover:shadow-md transition-shadow">
-      <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">{title}</p>
-      <p className="text-xl font-bold text-gray-900 dark:text-white mt-1">{value}</p>
-      <p className="text-xs text-gray-500 dark:text-gray-500 mt-0.5">{subtitle}</p>
+    <div className="bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700/50 p-2 sm:p-3 rounded-lg hover:shadow-md transition-shadow">
+      <p className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400 font-medium truncate">{title}</p>
+      <p className="text-base sm:text-xl font-bold text-gray-900 dark:text-white mt-0.5 sm:mt-1">{value}</p>
+      <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-500 mt-0.5 truncate">{subtitle}</p>
     </div>
   );
 }

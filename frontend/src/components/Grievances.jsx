@@ -115,17 +115,18 @@ export default function Grievances({ facilityId }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <div className="flex items-center space-x-2">
-          <span className="text-2xl">📝</span>
-          <span className="text-sm text-gray-500 dark:text-gray-400">Grievances</span>
+          <span className="text-xl sm:text-2xl">📝</span>
+          <span className="text-sm text-gray-500 dark:text-gray-400 hidden sm:inline">Grievances</span>
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+          className="flex items-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm sm:text-base"
         >
           <Plus size={18} />
-          <span>Report Grievance</span>
+          <span className="hidden sm:inline">Report Grievance</span>
+          <span className="sm:hidden">Report</span>
         </button>
       </div>
 
@@ -193,89 +194,80 @@ export default function Grievances({ facilityId }) {
           grievances.map((grievance) => (
             <div
               key={grievance.id}
-              className="bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 p-4 rounded-lg"
+              className="bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 p-3 sm:p-4 rounded-lg"
             >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <span className="font-medium text-gray-800 dark:text-white">
-                      {grievance.category}
-                    </span>
-                    <span className={`px-2 py-1 text-xs rounded flex items-center space-x-1 ${getStatusColor(grievance.status)}`}>
-                      {getStatusIcon(grievance.status)}
-                      <span>{grievance.status}</span>
-                    </span>
-                  </div>
+              {/* Header row - category and status */}
+              <div className="flex flex-wrap items-center gap-2 mb-2">
+                <span className="font-medium text-gray-800 dark:text-white text-sm sm:text-base">
+                  {grievance.category}
+                </span>
+                <span className={`px-2 py-0.5 text-xs rounded flex items-center space-x-1 ${getStatusColor(grievance.status)}`}>
+                  {getStatusIcon(grievance.status)}
+                  <span>{grievance.status}</span>
+                </span>
+              </div>
 
-                  {grievance.remarks && (
-                    <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
-                      {grievance.remarks}
-                    </p>
-                  )}
+              {/* Remarks */}
+              {grievance.remarks && (
+                <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                  {grievance.remarks}
+                </p>
+              )}
 
-                  <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
-                    <div>
-                      Reported by: <span className="font-medium">{grievance.requester_name}</span>
-                      {' · '}
-                      {formatInTimeZone(new Date(grievance.created_at), 'Indian/Maldives', 'MMM dd, yyyy h:mm a')}
-                    </div>
-
-                    {grievance.picker_name && (
-                      <div>
-                        Picked by: <span className="font-medium">{grievance.picker_name}</span>
-                        {grievance.picked_at && (
-                          <span> · {formatInTimeZone(new Date(grievance.picked_at), 'Indian/Maldives', 'MMM dd, yyyy h:mm a')}</span>
-                        )}
-                      </div>
-                    )}
-
-                    {grievance.started_at && (
-                      <div>
-                        Work started: {formatInTimeZone(new Date(grievance.started_at), 'Indian/Maldives', 'MMM dd, yyyy h:mm a')}
-                      </div>
-                    )}
-
-                    {grievance.completed_at && (
-                      <div className="text-green-600 dark:text-green-400">
-                        Completed: {formatInTimeZone(new Date(grievance.completed_at), 'Indian/Maldives', 'MMM dd, yyyy h:mm a')}
-                      </div>
-                    )}
-                  </div>
+              {/* Meta info - stacked on mobile */}
+              <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1 mb-3">
+                <div>
+                  <span className="font-medium">{grievance.requester_name}</span>
+                  <span className="hidden sm:inline"> · {formatInTimeZone(new Date(grievance.created_at), 'Indian/Maldives', 'MMM dd, yyyy h:mm a')}</span>
+                  <span className="sm:hidden"> · {formatInTimeZone(new Date(grievance.created_at), 'Indian/Maldives', 'MMM dd, h:mm a')}</span>
                 </div>
 
-                <div className="flex items-center space-x-2 ml-4">
-                  {/* Manager/Admin can pick grievances */}
-                  {isManager && grievance.status === 'pending' && (
-                    <button
-                      onClick={() => handlePick(grievance.id)}
-                      className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-                    >
-                      Pick
-                    </button>
-                  )}
+                {grievance.picker_name && (
+                  <div>
+                    Picked: <span className="font-medium">{grievance.picker_name}</span>
+                  </div>
+                )}
 
-                  {/* Picker can change status */}
-                  {(grievance.picker_id === user?.id || user?.role === 'Administrator') && (
-                    <>
-                      {grievance.status === 'picked' && (
-                        <button
-                          onClick={() => handleStatusChange(grievance.id, 'working')}
-                          className="px-3 py-1.5 text-sm bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition"
-                        >
-                          Start Work
-                        </button>
-                      )}
-                      {grievance.status === 'working' && (
-                        <button
-                          onClick={() => handleStatusChange(grievance.id, 'completed')}
-                          className="px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
-                        >
-                          Complete
-                        </button>
-                      )}
-                    </>
-                  )}
-                </div>
+                {grievance.completed_at && (
+                  <div className="text-green-600 dark:text-green-400">
+                    Done: {formatInTimeZone(new Date(grievance.completed_at), 'Indian/Maldives', 'MMM dd, h:mm a')}
+                  </div>
+                )}
+              </div>
+
+              {/* Action buttons - full width on mobile */}
+              <div className="flex flex-wrap gap-2">
+                {/* Manager/Admin can pick grievances */}
+                {isManager && grievance.status === 'pending' && (
+                  <button
+                    onClick={() => handlePick(grievance.id)}
+                    className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex-1 sm:flex-none"
+                  >
+                    Pick
+                  </button>
+                )}
+
+                {/* Picker can change status */}
+                {(grievance.picker_id === user?.id || user?.role === 'Administrator') && (
+                  <>
+                    {grievance.status === 'picked' && (
+                      <button
+                        onClick={() => handleStatusChange(grievance.id, 'working')}
+                        className="px-3 py-1.5 text-sm bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition flex-1 sm:flex-none"
+                      >
+                        Start Work
+                      </button>
+                    )}
+                    {grievance.status === 'working' && (
+                      <button
+                        onClick={() => handleStatusChange(grievance.id, 'completed')}
+                        className="px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex-1 sm:flex-none"
+                      >
+                        Complete
+                      </button>
+                    )}
+                  </>
+                )}
               </div>
             </div>
           ))
