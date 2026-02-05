@@ -103,8 +103,8 @@ export default function FacilityDetail() {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full">
           <TabsList className="border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 px-2 sm:px-6 overflow-x-auto flex-nowrap">
             <TabsTrigger value="cleaning">Cleaning</TabsTrigger>
-            {/* Schedule Visits - Admin only */}
-            {user?.role === 'Administrator' && (
+            {/* Schedule Visits - Admin and Manager */}
+            {(user?.role === 'Administrator' || user?.role === 'Manager') && (
               <TabsTrigger value="visits">Visits</TabsTrigger>
             )}
             <TabsTrigger value="grievances">Grievances</TabsTrigger>
@@ -116,8 +116,8 @@ export default function FacilityDetail() {
               <ModernCleaningSchedule facilityId={id} />
             </TabsContent>
 
-            {/* Schedule Visits - Admin only */}
-            {user?.role === 'Administrator' && (
+            {/* Schedule Visits - Admin and Manager */}
+            {(user?.role === 'Administrator' || user?.role === 'Manager') && (
               <TabsContent value="visits" className="h-full overflow-y-auto p-3 sm:p-6">
                 <ScheduleVisits facilityId={id} />
               </TabsContent>

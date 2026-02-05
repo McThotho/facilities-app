@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { grievancesAPI } from '../utils/api';
-import { AlertCircle, Plus, CheckCircle, PlayCircle, Clock } from 'lucide-react';
+import { AlertCircle, Plus, CheckCircle, PlayCircle, Clock, Mic, Square, Volume2 } from 'lucide-react';
 import { formatInTimeZone } from 'date-fns-tz';
 import { useAuth } from '../context/AuthContext';
 
@@ -26,6 +26,13 @@ export default function Grievances({ facilityId }) {
     remarks: '',
   });
 
+  // Voice recording state
+  const [isRecording, setIsRecording] = useState(false);
+  const [audioBlob, setAudioBlob] = useState(null);
+  const [audioUrl, setAudioUrl] = useState(null);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+
   useEffect(() => {
     loadGrievances();
   }, [facilityId]);
@@ -41,14 +48,58 @@ export default function Grievances({ facilityId }) {
     }
   };
 
+  // Start voice recording
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        setAudioBlob(blob);
+        setAudioUrl(URL.createObjectURL(blob));
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+    } catch (error) {
+      console.error('Failed to start recording:', error);
+      alert('Could not access microphone. Please allow microphone access.');
+    }
+  };
+
+  // Stop voice recording
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  };
+
+  // Clear recorded audio
+  const clearRecording = () => {
+    setAudioBlob(null);
+    setAudioUrl(null);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       await grievancesAPI.create({
         facilityId,
         ...formData,
-      });
+      }, audioBlob);
       setFormData({ category: '', remarks: '' });
+      clearRecording();
       setShowForm(false);
       await loadGrievances();
     } catch (error) {
@@ -154,7 +205,7 @@ export default function Grievances({ facilityId }) {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Remarks
+              Remarks (or use voice)
             </label>
             <textarea
               value={formData.remarks}
@@ -162,8 +213,50 @@ export default function Grievances({ facilityId }) {
               className="w-full px-3 py-2 bg-blue-50 dark:bg-blue-900/20 text-gray-900 dark:text-white border border-blue-200 dark:border-blue-800 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               rows={3}
               placeholder="Describe the issue..."
-              required
             />
+          </div>
+
+          {/* Voice Recording */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Voice Recording (optional)
+            </label>
+            <div className="flex items-center gap-3 flex-wrap">
+              {!isRecording && !audioUrl && (
+                <button
+                  type="button"
+                  onClick={startRecording}
+                  className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
+                >
+                  <Mic size={18} />
+                  <span>Record Voice</span>
+                </button>
+              )}
+
+              {isRecording && (
+                <button
+                  type="button"
+                  onClick={stopRecording}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-800 transition animate-pulse"
+                >
+                  <Square size={18} />
+                  <span>Stop Recording</span>
+                </button>
+              )}
+
+              {audioUrl && !isRecording && (
+                <div className="flex items-center gap-2 flex-wrap">
+                  <audio src={audioUrl} controls className="h-10" />
+                  <button
+                    type="button"
+                    onClick={clearRecording}
+                    className="px-3 py-2 text-sm bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-600"
+                  >
+                    Clear
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="flex space-x-2">
@@ -212,6 +305,14 @@ export default function Grievances({ facilityId }) {
                 <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
                   {grievance.remarks}
                 </p>
+              )}
+
+              {/* Voice Recording */}
+              {grievance.voice_url && (
+                <div className="flex items-center gap-2 mb-2">
+                  <Volume2 size={16} className="text-blue-500" />
+                  <audio src={grievance.voice_url} controls className="h-8" />
+                </div>
               )}
 
               {/* Meta info - stacked on mobile */}

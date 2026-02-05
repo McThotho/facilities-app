@@ -2,6 +2,21 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../database');
 const { authenticateToken } = require('../middleware/auth');
+const multer = require('multer');
+const { put } = require('@vercel/blob');
+
+// Configure multer for memory storage
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB max
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('audio/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only audio files are allowed'), false);
+    }
+  }
+});
 
 // Get all grievances for a facility
 router.get('/facility/:facilityId', authenticateToken, async (req, res) => {
@@ -25,17 +40,28 @@ router.get('/facility/:facilityId', authenticateToken, async (req, res) => {
   }
 });
 
-// Create a new grievance
-router.post('/', authenticateToken, async (req, res) => {
+// Create a new grievance (with optional voice recording)
+router.post('/', authenticateToken, upload.single('voice'), async (req, res) => {
   try {
     const { facilityId, category, remarks } = req.body;
     const requesterId = req.user.id;
+    let voiceUrl = null;
+
+    // Upload voice file to Vercel Blob if provided
+    if (req.file) {
+      const filename = `grievances/voice-${Date.now()}-${Math.random().toString(36).substring(7)}.webm`;
+      const blob = await put(filename, req.file.buffer, {
+        access: 'public',
+        contentType: req.file.mimetype,
+      });
+      voiceUrl = blob.url;
+    }
 
     const result = await pool.query(`
-      INSERT INTO grievances (facility_id, requester_id, category, remarks, status)
-      VALUES ($1, $2, $3, $4, 'pending')
+      INSERT INTO grievances (facility_id, requester_id, category, remarks, voice_url, status)
+      VALUES ($1, $2, $3, $4, $5, 'pending')
       RETURNING id
-    `, [facilityId, requesterId, category, remarks]);
+    `, [facilityId, requesterId, category, remarks, voiceUrl]);
 
     const grievanceResult = await pool.query(`
       SELECT g.*,

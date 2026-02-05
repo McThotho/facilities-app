@@ -66,8 +66,8 @@ export default function ModernLayout({ children }) {
 
         {/* Navigation */}
         <nav className="p-3 space-y-1 flex-1 overflow-y-auto">
-          {/* Dashboard Link (Admin only) */}
-          {user?.role === 'Administrator' && (
+          {/* Dashboard Link (Admin and Manager) */}
+          {(user?.role === 'Administrator' || user?.role === 'Manager') && (
             <Link
               to="/"
               className={`flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${

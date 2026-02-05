@@ -78,7 +78,18 @@ export const dashboardAPI = {
 // Grievances API
 export const grievancesAPI = {
   getByFacility: (facilityId) => api.get(`/grievances/facility/${facilityId}`),
-  create: (data) => api.post('/grievances', data),
+  create: (data, voiceBlob) => {
+    const formData = new FormData();
+    formData.append('facilityId', data.facilityId);
+    formData.append('category', data.category);
+    formData.append('remarks', data.remarks || '');
+    if (voiceBlob) {
+      formData.append('voice', voiceBlob, 'voice-recording.webm');
+    }
+    return api.post('/grievances', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
   pick: (id) => api.post(`/grievances/${id}/pick`),
   updateStatus: (id, status) => api.patch(`/grievances/${id}/status`, { status }),
 };

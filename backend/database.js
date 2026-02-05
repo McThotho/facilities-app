@@ -124,6 +124,7 @@ async function initDatabase() {
         picker_id INTEGER,
         category TEXT NOT NULL,
         remarks TEXT,
+        voice_url TEXT,
         status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'picked', 'working', 'completed')),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         picked_at TIMESTAMP,
@@ -133,6 +134,16 @@ async function initDatabase() {
         FOREIGN KEY (requester_id) REFERENCES users(id) ON DELETE CASCADE,
         FOREIGN KEY (picker_id) REFERENCES users(id) ON DELETE SET NULL
       )
+    `);
+
+    // Add voice_url column if it doesn't exist (migration for existing databases)
+    await client.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'grievances' AND column_name = 'voice_url') THEN
+          ALTER TABLE grievances ADD COLUMN voice_url TEXT;
+        END IF;
+      END $$;
     `);
 
     // Create default admin user if not exists
