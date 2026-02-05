@@ -47,7 +47,7 @@ export default function ModernLayout({ children }) {
     <div className="flex h-screen bg-gray-50 dark:bg-gray-950">
       {/* Modern Sidebar */}
       <div
-        className={`bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transition-all duration-300 ${
+        className={`bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transition-all duration-300 flex flex-col ${
           sidebarOpen ? 'w-64' : 'w-0'
         } overflow-hidden`}
       >
@@ -65,7 +65,7 @@ export default function ModernLayout({ children }) {
         </div>
 
         {/* Navigation */}
-        <nav className="p-3 space-y-1">
+        <nav className="p-3 space-y-1 flex-1 overflow-y-auto">
           {/* Dashboard Link (Admin only) */}
           {user?.role === 'Administrator' && (
             <Link
@@ -130,11 +130,11 @@ export default function ModernLayout({ children }) {
           </div>
         </nav>
 
-        {/* User Section */}
-        <div className="absolute bottom-0 left-0 w-64 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+        {/* User Section - flex-shrink-0 keeps it at bottom */}
+        <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
           <div className="p-3">
             <div className="flex items-center space-x-3 p-2 rounded-lg bg-gray-50 dark:bg-gray-800/50">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
                 <span className="text-white font-semibold text-sm">
                   {user?.username?.charAt(0).toUpperCase()}
                 </span>
@@ -149,7 +149,7 @@ export default function ModernLayout({ children }) {
               </div>
               <button
                 onClick={handleLogout}
-                className="p-2 text-gray-400 hover:text-red-500 dark:hover:text-red-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                className="p-2 text-gray-400 hover:text-red-500 dark:hover:text-red-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex-shrink-0"
                 title="Logout"
               >
                 <LogOut size={18} />

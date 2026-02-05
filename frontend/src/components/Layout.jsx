@@ -42,16 +42,16 @@ export default function Layout({ children }) {
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar */}
       <div
-        className={`bg-gray-900 text-white transition-all duration-300 ${
+        className={`bg-gray-900 text-white transition-all duration-300 flex flex-col ${
           sidebarOpen ? 'w-64' : 'w-0'
         } overflow-hidden`}
       >
-        <div className="p-4 border-b border-gray-700">
+        <div className="p-4 border-b border-gray-700 flex-shrink-0">
           <h2 className="text-xl font-bold">FacilityHub</h2>
           <p className="text-sm text-gray-400 mt-1">{user?.role}</p>
         </div>
 
-        <nav className="p-4 space-y-1">
+        <nav className="p-4 space-y-1 flex-1 overflow-y-auto">
           {/* Dashboard Link */}
           <Link
             to="/"
@@ -90,7 +90,7 @@ export default function Layout({ children }) {
         </nav>
 
         {/* User Info & Logout */}
-        <div className="absolute bottom-0 left-0 w-64 p-4 border-t border-gray-700 bg-gray-900">
+        <div className="flex-shrink-0 p-4 border-t border-gray-700 bg-gray-900">
           <div className="flex items-center justify-between">
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium truncate">{user?.username}</p>
