@@ -46,9 +46,7 @@ export const cleaningAPI = {
   complete: (id, photoFile) => {
     const formData = new FormData();
     formData.append('photo', photoFile);
-    return api.post(`/cleaning/${id}/complete`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    return api.post(`/cleaning/${id}/complete`, formData);
   },
   delete: (id) => api.delete(`/cleaning/${id}`),
 };
@@ -86,9 +84,7 @@ export const grievancesAPI = {
     if (voiceBlob) {
       formData.append('voice', voiceBlob, 'voice-recording.webm');
     }
-    return api.post('/grievances', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    return api.post('/grievances', formData);
   },
   pick: (id) => api.post(`/grievances/${id}/pick`),
   updateStatus: (id, status) => api.patch(`/grievances/${id}/status`, { status }),
@@ -111,9 +107,7 @@ export const cleaningAssignmentsAPI = {
   uploadPhoto: (itemId, photoFile) => {
     const formData = new FormData();
     formData.append('photo', photoFile);
-    return api.post(`/cleaning-assignments/checklist/${itemId}/photo`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    return api.post(`/cleaning-assignments/checklist/${itemId}/photo`, formData);
   },
 };
 

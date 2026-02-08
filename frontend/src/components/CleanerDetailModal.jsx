@@ -16,7 +16,7 @@ const AREA_NAMES = {
   bedroom: 'Bedroom',
 };
 
-export default function CleanerDetailModal({ assignment, onClose, onUpdate }) {
+export default function CleanerDetailModal({ assignment, onClose }) {
   const { user } = useAuth();
   const [checklist, setChecklist] = useState(assignment.checklist || []);
   const [uploadingItemId, setUploadingItemId] = useState(null);
@@ -39,7 +39,6 @@ export default function CleanerDetailModal({ assignment, onClose, onUpdate }) {
       const response = await cleaningAssignmentsAPI.toggleChecklistItem(itemId);
       // Update with server response to ensure consistency
       setChecklist(prev => prev.map(item => item.id === itemId ? response.data : item));
-      onUpdate();
     } catch (error) {
       console.error('Failed to toggle item:', error);
       // Revert on failure
@@ -58,8 +57,7 @@ export default function CleanerDetailModal({ assignment, onClose, onUpdate }) {
     setUploadingItemId(itemId);
     try {
       const response = await cleaningAssignmentsAPI.uploadPhoto(itemId, file);
-      setChecklist(checklist.map(item => item.id === itemId ? response.data : item));
-      onUpdate();
+      setChecklist(prev => prev.map(item => item.id === itemId ? response.data : item));
     } catch (error) {
       console.error('Failed to upload photo:', error);
       alert('Failed to upload photo');
@@ -81,8 +79,6 @@ export default function CleanerDetailModal({ assignment, onClose, onUpdate }) {
         console.error('Failed to toggle item:', error);
       }
     }
-
-    onUpdate();
   };
 
   // Group checklist by area
