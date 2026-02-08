@@ -55,7 +55,6 @@ export default function ModernLayout({ children }) {
   };
 
   const isActive = (path) => location.pathname === path;
-  const firstFacility = facilities[0];
   const activeFacility = facilities.find((facility) => isActive(`/facility/${facility.id}`));
 
   const handleNavClick = () => {
@@ -242,47 +241,13 @@ export default function ModernLayout({ children }) {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-950 p-3 pb-20 md:p-6 md:pb-6">
+        <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-950 p-3 md:p-6">
           <div className="max-w-7xl mx-auto animate-fade-in">
             {children}
           </div>
         </main>
       </div>
 
-      {isMobile && (
-        <nav className="fixed bottom-0 left-0 right-0 z-20 border-t border-gray-200 bg-white/95 px-2 py-1 backdrop-blur dark:border-gray-800 dark:bg-gray-900/95">
-          <div className="grid grid-cols-3 gap-1">
-            <Link
-              to={user?.role === 'Administrator' || user?.role === 'Manager' ? '/' : firstFacility ? `/facility/${firstFacility.id}` : '/'}
-              className={`flex min-h-[44px] items-center justify-center rounded-lg text-xs font-medium ${
-                isActive('/') ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' : 'text-gray-600 dark:text-gray-300'
-              }`}
-            >
-              <Home size={16} className="mr-1" />
-              Home
-            </Link>
-            <Link
-              to={firstFacility ? `/facility/${firstFacility.id}` : '/'}
-              className={`flex min-h-[44px] items-center justify-center rounded-lg text-xs font-medium ${
-                location.pathname.startsWith('/facility/')
-                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
-                  : 'text-gray-600 dark:text-gray-300'
-              }`}
-            >
-              <Building2 size={16} className="mr-1" />
-              Facility
-            </Link>
-            <button
-              type="button"
-              onClick={toggleTheme}
-              className="flex min-h-[44px] items-center justify-center rounded-lg text-xs font-medium text-gray-600 dark:text-gray-300"
-            >
-              {theme === 'dark' ? <Sun size={16} className="mr-1" /> : <Moon size={16} className="mr-1" />}
-              Theme
-            </button>
-          </div>
-        </nav>
-      )}
     </div>
   );
 }
