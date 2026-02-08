@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { cleaningAssignmentsAPI } from '../utils/api';
-import { X, CheckCircle, Circle, Camera, Image as ImageIcon, FolderOpen } from 'lucide-react';
+import { X, CheckCircle, Circle, Camera, Image as ImageIcon, FolderOpen, PartyPopper } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
+import confetti from 'canvas-confetti';
 
 const AREA_ICONS = {
   living_area: '🛋️',
@@ -21,9 +22,39 @@ export default function CleanerDetailModal({ assignment, onClose }) {
   const [checklist, setChecklist] = useState(assignment.checklist || []);
   const [uploadingItemId, setUploadingItemId] = useState(null);
 
+  const [showCelebration, setShowCelebration] = useState(false);
+  const hasShownCelebration = useRef(false);
+  const prevCompletedCount = useRef(checklist.filter(item => item.is_completed).length);
+
   const isAssignedUser = assignment.assigned_user_id === user?.id;
   const isAdmin = user?.role === 'Administrator';
   const canEdit = isAssignedUser || isAdmin;
+
+  const fireCelebration = useCallback(() => {
+    const duration = 3000;
+    const end = Date.now() + duration;
+
+    const frame = () => {
+      confetti({ particleCount: 3, angle: 60, spread: 55, origin: { x: 0, y: 0.7 } });
+      confetti({ particleCount: 3, angle: 120, spread: 55, origin: { x: 1, y: 0.7 } });
+      if (Date.now() < end) requestAnimationFrame(frame);
+    };
+    frame();
+  }, []);
+
+  useEffect(() => {
+    const completedCount = checklist.filter(item => item.is_completed).length;
+    const allDone = checklist.length > 0 && completedCount === checklist.length;
+
+    // Only trigger if all items just became completed (count increased) and we haven't shown yet
+    if (allDone && completedCount > prevCompletedCount.current && !hasShownCelebration.current) {
+      hasShownCelebration.current = true;
+      setShowCelebration(true);
+      fireCelebration();
+    }
+
+    prevCompletedCount.current = completedCount;
+  }, [checklist, fireCelebration]);
 
   const handleToggleItem = async (itemId) => {
     if (!canEdit) return;
@@ -96,7 +127,7 @@ export default function CleanerDetailModal({ assignment, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-0 sm:p-4">
-      <div className="bg-white dark:bg-gray-900 rounded-none sm:rounded-xl shadow-2xl w-full h-full sm:h-auto sm:max-h-[90vh] sm:max-w-4xl overflow-hidden flex flex-col">
+      <div className="relative bg-white dark:bg-gray-900 rounded-none sm:rounded-xl shadow-2xl w-full h-full sm:h-auto sm:max-h-[90vh] sm:max-w-4xl overflow-hidden flex flex-col">
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 sm:p-6">
           <div className="flex items-center justify-between">
@@ -296,6 +327,29 @@ export default function CleanerDetailModal({ assignment, onClose }) {
             </button>
           </div>
         </div>
+
+        {/* Celebration Pop-up */}
+        {showCelebration && (
+          <div className="absolute inset-0 flex items-center justify-center z-50 bg-black/40 rounded-none sm:rounded-xl">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 mx-4 max-w-sm w-full text-center transform animate-bounce-in">
+              <div className="text-6xl mb-4">
+                <PartyPopper size={64} className="mx-auto text-yellow-500" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
+                All Done!
+              </h3>
+              <p className="text-gray-600 dark:text-gray-300 mb-6">
+                Great job! All cleaning tasks have been completed successfully.
+              </p>
+              <button
+                onClick={() => setShowCelebration(false)}
+                className="px-8 py-3 min-h-[44px] bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold rounded-xl hover:from-green-600 hover:to-emerald-700 transition shadow-lg"
+              >
+                Awesome!
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
