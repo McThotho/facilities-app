@@ -97,10 +97,15 @@ export const grievancesAPI = {
 // Cleaning Assignments API
 export const cleaningAssignmentsAPI = {
   getByFacility: (facilityId, startDate, endDate) =>
-    api.get(`/cleaning-assignments/facility/${facilityId}`, { params: { startDate, endDate } }),
+    api.get(`/cleaning-assignments/facility/${Number.parseInt(facilityId, 10)}`, { params: { startDate, endDate } }),
   getOne: (id) => api.get(`/cleaning-assignments/${id}`),
-  create: (data) => api.post('/cleaning-assignments', data),
-  autoAssign: (facilityId) => api.post(`/cleaning-assignments/auto-assign/${facilityId}`),
+  create: (data) =>
+    api.post('/cleaning-assignments', {
+      ...data,
+      facilityId: Number.parseInt(data.facilityId, 10),
+      assignedUserId: Number.parseInt(data.assignedUserId, 10),
+    }),
+  autoAssign: (facilityId) => api.post(`/cleaning-assignments/auto-assign/${Number.parseInt(facilityId, 10)}`),
   updateStatus: (id, status) => api.patch(`/cleaning-assignments/${id}/status`, { status }),
   toggleChecklistItem: (itemId) => api.patch(`/cleaning-assignments/checklist/${itemId}/toggle`),
   uploadPhoto: (itemId, photoFile) => {

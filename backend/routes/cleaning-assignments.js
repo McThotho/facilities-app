@@ -48,19 +48,39 @@ const CHECKLIST_TEMPLATES = {
   ]
 };
 
+const toDateOnly = (value) => {
+  if (!value) return null;
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 // Get assignments for a facility (with date range)
 router.get('/facility/:facilityId', authenticateToken, async (req, res) => {
   try {
-    const { facilityId } = req.params;
+    const facilityId = Number.parseInt(req.params.facilityId, 10);
     const { startDate, endDate } = req.query;
+    if (!Number.isInteger(facilityId) || facilityId <= 0) {
+      return res.status(400).json({ error: 'Invalid facility ID' });
+    }
 
     let query = `
       SELECT
-        ca.*,
+        ca.id,
+        ca.facility_id,
+        ca.assigned_user_id,
+        TO_CHAR(ca.scheduled_date, 'YYYY-MM-DD') as scheduled_date,
+        ca.status,
+        ca.started_at,
+        ca.completed_at,
+        ca.created_at,
         u.username as cleaner_name,
         u.email as cleaner_email,
-        COUNT(CASE WHEN cci.is_completed = true THEN 1 END) as completed_items,
-        COUNT(cci.id) as total_items
+        COUNT(CASE WHEN cci.is_completed = true THEN 1 END)::int as completed_items,
+        COUNT(cci.id)::int as total_items
       FROM cleaning_assignments ca
       LEFT JOIN users u ON ca.assigned_user_id = u.id
       LEFT JOIN cleaning_checklist_items cci ON ca.id = cci.assignment_id
@@ -122,11 +142,33 @@ router.get('/:id', authenticateToken, async (req, res) => {
 // Create assignment (Manager/Admin only)
 router.post('/', authenticateToken, async (req, res) => {
   try {
-    const { facilityId, assignedUserId, scheduledDate } = req.body;
+    const facilityId = Number.parseInt(req.body.facilityId, 10);
+    const assignedUserId = Number.parseInt(req.body.assignedUserId, 10);
+    const scheduledDate = toDateOnly(req.body.scheduledDate);
 
     // Check if user is Manager or Admin
     if (req.user.role !== 'Manager' && req.user.role !== 'Administrator') {
       return res.status(403).json({ error: 'Only managers and administrators can create assignments' });
+    }
+    if (!Number.isInteger(facilityId) || facilityId <= 0) {
+      return res.status(400).json({ error: 'Invalid facility ID' });
+    }
+    if (!Number.isInteger(assignedUserId) || assignedUserId <= 0) {
+      return res.status(400).json({ error: 'Invalid cleaner selection' });
+    }
+    if (!scheduledDate) {
+      return res.status(400).json({ error: 'Invalid scheduled date' });
+    }
+
+    const cleanerInFacilityResult = await pool.query(`
+      SELECT 1
+      FROM user_facilities uf
+      JOIN users u ON u.id = uf.user_id
+      WHERE uf.facility_id = $1 AND uf.user_id = $2 AND u.role = 'User'
+      LIMIT 1
+    `, [facilityId, assignedUserId]);
+    if (cleanerInFacilityResult.rowCount === 0) {
+      return res.status(400).json({ error: 'Selected cleaner is not assigned to this facility' });
     }
 
     // Check if assignment already exists for this date
@@ -173,9 +215,16 @@ router.post('/', authenticateToken, async (req, res) => {
     // Fetch the created assignment
     const assignmentResult = await pool.query(`
       SELECT
-        ca.*,
+        ca.id,
+        ca.facility_id,
+        ca.assigned_user_id,
+        TO_CHAR(ca.scheduled_date, 'YYYY-MM-DD') as scheduled_date,
+        ca.status,
+        ca.started_at,
+        ca.completed_at,
+        ca.created_at,
         u.username as cleaner_name,
-        COUNT(cci.id) as total_items
+        COUNT(cci.id)::int as total_items
       FROM cleaning_assignments ca
       LEFT JOIN users u ON ca.assigned_user_id = u.id
       LEFT JOIN cleaning_checklist_items cci ON ca.id = cci.assignment_id
@@ -193,11 +242,14 @@ router.post('/', authenticateToken, async (req, res) => {
 // Auto-assign cleaners for next 7 days (Manager/Admin only)
 router.post('/auto-assign/:facilityId', authenticateToken, async (req, res) => {
   try {
-    const { facilityId } = req.params;
+    const facilityId = Number.parseInt(req.params.facilityId, 10);
 
     // Check if user is Manager or Admin
     if (req.user.role !== 'Manager' && req.user.role !== 'Administrator') {
       return res.status(403).json({ error: 'Only managers and administrators can auto-assign' });
+    }
+    if (!Number.isInteger(facilityId) || facilityId <= 0) {
+      return res.status(400).json({ error: 'Invalid facility ID' });
     }
 
     // Get users assigned to this facility
@@ -242,7 +294,7 @@ router.post('/auto-assign/:facilityId', authenticateToken, async (req, res) => {
     for (let i = 0; i < 7; i++) {
       const date = new Date(today);
       date.setDate(date.getDate() + i);
-      const scheduledDate = date.toISOString().split('T')[0];
+      const scheduledDate = toDateOnly(date);
 
       // Check if assignment already exists
       const existingResult = await pool.query(`

@@ -7,9 +7,11 @@ import CleanerDetailModal from './CleanerDetailModal';
 
 export default function ModernCleaningSchedule({ facilityId }) {
   const { user } = useAuth();
+  const parsedFacilityId = Number.parseInt(facilityId, 10);
   const [assignments, setAssignments] = useState([]);
   const [facilityUsers, setFacilityUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState('');
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedAssignment, setSelectedAssignment] = useState(null);
   const [showModal, setShowModal] = useState(false);
@@ -25,21 +27,45 @@ export default function ModernCleaningSchedule({ facilityId }) {
     loadData();
   }, [facilityId, selectedDate]);
 
+  const normalizeDate = (dateValue) => {
+    if (!dateValue) return '';
+    if (typeof dateValue === 'string') {
+      return dateValue.split('T')[0];
+    }
+    const parsedDate = new Date(dateValue);
+    if (Number.isNaN(parsedDate.getTime())) return '';
+    return format(parsedDate, 'yyyy-MM-dd');
+  };
+
   const loadData = async () => {
+    if (!Number.isInteger(parsedFacilityId) || parsedFacilityId <= 0) {
+      setErrorMessage('Invalid facility selected');
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setErrorMessage('');
     try {
       // Get 7 days of assignments starting from selected date
       const start = format(startOfDay(selectedDate), 'yyyy-MM-dd');
       const end = format(endOfDay(addDays(selectedDate, 6)), 'yyyy-MM-dd');
 
       const [assignmentsRes, usersRes] = await Promise.all([
-        cleaningAssignmentsAPI.getByFacility(facilityId, start, end),
-        facilitiesAPI.getUsers(facilityId),
+        cleaningAssignmentsAPI.getByFacility(parsedFacilityId, start, end),
+        facilitiesAPI.getUsers(parsedFacilityId),
       ]);
 
-      setAssignments(assignmentsRes.data);
+      setAssignments(
+        assignmentsRes.data.map((assignment) => ({
+          ...assignment,
+          scheduled_date: normalizeDate(assignment.scheduled_date),
+        }))
+      );
       setFacilityUsers(usersRes.data);
     } catch (error) {
       console.error('Failed to load cleaning data:', error);
+      setErrorMessage(error.response?.data?.error || 'Failed to load cleaning schedule');
     } finally {
       setLoading(false);
     }
@@ -47,27 +73,43 @@ export default function ModernCleaningSchedule({ facilityId }) {
 
   const handleAutoAssign = async () => {
     if (!confirm('Auto-assign cleaners for the next 7 days?')) return;
+    if (!Number.isInteger(parsedFacilityId) || parsedFacilityId <= 0) {
+      const message = 'Invalid facility selected';
+      setErrorMessage(message);
+      alert(message);
+      return;
+    }
 
     try {
-      await cleaningAssignmentsAPI.autoAssign(facilityId);
+      setErrorMessage('');
+      await cleaningAssignmentsAPI.autoAssign(parsedFacilityId);
       await loadData();
     } catch (error) {
       console.error('Failed to auto-assign:', error);
-      alert('Failed to auto-assign cleaners');
+      const message = error.response?.data?.error || 'Failed to auto-assign cleaners';
+      setErrorMessage(message);
+      alert(message);
     }
   };
 
   const handleManualAssign = async (e) => {
     e.preventDefault();
+    if (!Number.isInteger(parsedFacilityId) || parsedFacilityId <= 0) {
+      const message = 'Invalid facility selected';
+      setErrorMessage(message);
+      alert(message);
+      return;
+    }
     if (!manualAssignData.userId) {
       alert('Please select a cleaner');
       return;
     }
 
     try {
+      setErrorMessage('');
       await cleaningAssignmentsAPI.create({
-        facilityId,
-        assignedUserId: parseInt(manualAssignData.userId),
+        facilityId: parsedFacilityId,
+        assignedUserId: Number.parseInt(manualAssignData.userId, 10),
         scheduledDate: manualAssignData.date,
       });
       setShowManualAssign(false);
@@ -75,7 +117,9 @@ export default function ModernCleaningSchedule({ facilityId }) {
       await loadData();
     } catch (error) {
       console.error('Failed to create assignment:', error);
-      alert(error.response?.data?.error || 'Failed to create assignment');
+      const message = error.response?.data?.error || 'Failed to create assignment';
+      setErrorMessage(message);
+      alert(message);
     }
   };
 
@@ -112,7 +156,7 @@ export default function ModernCleaningSchedule({ facilityId }) {
   for (let i = 0; i < 7; i++) {
     const date = addDays(selectedDate, i);
     const dateStr = format(date, 'yyyy-MM-dd');
-    const assignment = assignments.find(a => a.scheduled_date === dateStr);
+    const assignment = assignments.find((a) => normalizeDate(a.scheduled_date) === dateStr);
     scheduleData.push({ date, dateStr, assignment });
   }
 
@@ -122,6 +166,12 @@ export default function ModernCleaningSchedule({ facilityId }) {
 
   return (
     <div className="space-y-6">
+      {errorMessage && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/70 dark:bg-red-950/30 dark:text-red-300">
+          {errorMessage}
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center space-x-2">
@@ -133,7 +183,7 @@ export default function ModernCleaningSchedule({ facilityId }) {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowManualAssign(!showManualAssign)}
-              className="flex items-center justify-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition shadow-lg text-sm flex-1 sm:flex-none"
+              className="flex items-center justify-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-2.5 min-h-[44px] bg-green-600 text-white rounded-lg hover:bg-green-700 transition shadow-lg text-sm flex-1 sm:flex-none"
             >
               <UserPlus size={16} />
               <span className="hidden sm:inline">Manual Assign</span>
@@ -141,7 +191,7 @@ export default function ModernCleaningSchedule({ facilityId }) {
             </button>
             <button
               onClick={handleAutoAssign}
-              className="flex items-center justify-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition shadow-lg text-sm flex-1 sm:flex-none"
+              className="flex items-center justify-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-2.5 min-h-[44px] bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition shadow-lg text-sm flex-1 sm:flex-none"
             >
               <Sparkles size={16} />
               <span className="hidden sm:inline">Auto-Assign 7 Days</span>
@@ -164,7 +214,7 @@ export default function ModernCleaningSchedule({ facilityId }) {
                 type="date"
                 value={manualAssignData.date}
                 onChange={(e) => setManualAssignData({ ...manualAssignData, date: e.target.value })}
-                className="w-full px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full px-3 py-2.5 min-h-[44px] bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                 required
               />
             </div>
@@ -176,7 +226,7 @@ export default function ModernCleaningSchedule({ facilityId }) {
               <select
                 value={manualAssignData.userId}
                 onChange={(e) => setManualAssignData({ ...manualAssignData, userId: e.target.value })}
-                className="w-full px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full px-3 py-2.5 min-h-[44px] bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                 required
               >
                 <option value="">Select a cleaner</option>
@@ -191,14 +241,14 @@ export default function ModernCleaningSchedule({ facilityId }) {
             <div className="md:col-span-2 flex space-x-2">
               <button
                 type="submit"
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                className="px-4 py-2.5 min-h-[44px] bg-green-600 text-white rounded-lg hover:bg-green-700"
               >
                 Assign
               </button>
               <button
                 type="button"
                 onClick={() => setShowManualAssign(false)}
-                className="px-4 py-2 bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-600"
+                className="px-4 py-2.5 min-h-[44px] bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-600"
               >
                 Cancel
               </button>
@@ -315,7 +365,7 @@ export default function ModernCleaningSchedule({ facilityId }) {
               type="date"
               value={format(selectedDate, 'yyyy-MM-dd')}
               onChange={(e) => setSelectedDate(new Date(e.target.value))}
-              className="w-full px-3 py-2 bg-blue-50 dark:bg-blue-900/20 text-gray-900 dark:text-white border border-blue-200 dark:border-blue-800 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              className="w-full px-3 py-2.5 min-h-[44px] bg-blue-50 dark:bg-blue-900/20 text-gray-900 dark:text-white border border-blue-200 dark:border-blue-800 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
             />
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 hidden sm:block">
               Select a date to view the 7-day schedule starting from that day

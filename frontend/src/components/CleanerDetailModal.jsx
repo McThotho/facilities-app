@@ -85,20 +85,20 @@ export default function CleanerDetailModal({ assignment, onClose, onUpdate }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-0 sm:p-4">
+      <div className="bg-white dark:bg-gray-900 rounded-none sm:rounded-xl shadow-2xl w-full h-full sm:h-auto sm:max-h-[90vh] sm:max-w-4xl overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6">
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 sm:p-6">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-bold">Cleaning Details</h2>
+              <h2 className="text-xl sm:text-2xl font-bold">Cleaning Details</h2>
               <p className="text-blue-100 mt-1">
                 {assignment.cleaner_name} • {format(new Date(assignment.scheduled_date), 'EEEE, MMM dd, yyyy')}
               </p>
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-white/20 rounded-lg transition"
+              className="p-2.5 min-h-[44px] min-w-[44px] hover:bg-white/20 rounded-lg transition"
             >
               <X size={24} />
             </button>
@@ -124,7 +124,7 @@ export default function CleanerDetailModal({ assignment, onClose, onUpdate }) {
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
           {Object.entries(checklistByArea).map(([area, items]) => {
             const progress = getAreaProgress(area);
             const allCompleted = progress.completed === progress.total && progress.total > 0;
@@ -151,7 +151,7 @@ export default function CleanerDetailModal({ assignment, onClose, onUpdate }) {
                   {canEdit && !allCompleted && (
                     <button
                       onClick={() => handleSelectAll(area)}
-                      className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                      className="px-3 py-2 min-h-[44px] text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
                     >
                       Select All
                     </button>
@@ -219,13 +219,13 @@ export default function CleanerDetailModal({ assignment, onClose, onUpdate }) {
                                 href={`http://localhost:3001${item.photo_url}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex items-center space-x-1 px-3 py-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 transition text-sm"
+                                className="flex items-center space-x-1 px-3 py-2 min-h-[44px] bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 transition text-sm"
                               >
                                 <ImageIcon size={16} />
                                 <span>View Photo</span>
                               </a>
                             ) : canEdit && (
-                              <label className="flex items-center space-x-1 px-3 py-1.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition cursor-pointer text-sm">
+                              <label className="flex items-center space-x-1 px-3 py-2 min-h-[44px] bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition cursor-pointer text-sm">
                                 <Camera size={16} />
                                 <span>{uploadingItemId === item.id ? 'Uploading...' : 'Add Photo'}</span>
                                 <input
@@ -260,7 +260,7 @@ export default function CleanerDetailModal({ assignment, onClose, onUpdate }) {
             </div>
             <button
               onClick={onClose}
-              className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition"
+              className="px-6 py-2.5 min-h-[44px] bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition"
             >
               Close
             </button>
