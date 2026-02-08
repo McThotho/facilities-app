@@ -10,7 +10,7 @@ const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
   fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|webp/;
+    const allowedTypes = /jpeg|jpg|png|webp|heic|heif/;
     const mimetype = allowedTypes.test(file.mimetype);
     if (mimetype) {
       return cb(null, true);
@@ -26,7 +26,7 @@ const CHECKLIST_TEMPLATES = {
     'Vacuum or mop floors',
     'Clean windows and mirrors',
     'Empty trash bins',
-    'Organize furniture',
+    'Clean AC and fan',
     'Clean light fixtures'
   ],
   bathroom: [
@@ -36,10 +36,8 @@ const CHECKLIST_TEMPLATES = {
     'Clean mirrors',
     'Mop floor',
     'Empty trash',
-    'Restock supplies'
   ],
   bedroom: [
-    'Change bed linens',
     'Dust furniture',
     'Vacuum or mop floors',
     'Organize items',
@@ -77,7 +75,7 @@ router.get('/facility/:facilityId', authenticateToken, async (req, res) => {
         ca.started_at,
         ca.completed_at,
         ca.created_at,
-        u.username as cleaner_name,
+        COALESCE(u.full_name, u.username) as cleaner_name,
         u.email as cleaner_email,
         COUNT(CASE WHEN cci.is_completed = true THEN 1 END)::int as completed_items,
         COUNT(cci.id)::int as total_items
@@ -94,7 +92,7 @@ router.get('/facility/:facilityId', authenticateToken, async (req, res) => {
       params.push(startDate, endDate);
     }
 
-    query += ` GROUP BY ca.id, ca.facility_id, ca.assigned_user_id, ca.scheduled_date, ca.status, ca.started_at, ca.completed_at, ca.created_at, u.username, u.email ORDER BY ca.scheduled_date DESC`;
+    query += ` GROUP BY ca.id, ca.facility_id, ca.assigned_user_id, ca.scheduled_date, ca.status, ca.started_at, ca.completed_at, ca.created_at, u.full_name, u.username, u.email ORDER BY ca.scheduled_date DESC`;
 
     const result = await pool.query(query, params);
 
@@ -113,7 +111,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
     const assignmentResult = await pool.query(`
       SELECT
         ca.*,
-        u.username as cleaner_name,
+        COALESCE(u.full_name, u.username) as cleaner_name,
         u.email as cleaner_email
       FROM cleaning_assignments ca
       LEFT JOIN users u ON ca.assigned_user_id = u.id
@@ -223,13 +221,13 @@ router.post('/', authenticateToken, async (req, res) => {
         ca.started_at,
         ca.completed_at,
         ca.created_at,
-        u.username as cleaner_name,
+        COALESCE(u.full_name, u.username) as cleaner_name,
         COUNT(cci.id)::int as total_items
       FROM cleaning_assignments ca
       LEFT JOIN users u ON ca.assigned_user_id = u.id
       LEFT JOIN cleaning_checklist_items cci ON ca.id = cci.assignment_id
       WHERE ca.id = $1
-      GROUP BY ca.id, ca.facility_id, ca.assigned_user_id, ca.scheduled_date, ca.status, ca.started_at, ca.completed_at, ca.created_at, u.username
+      GROUP BY ca.id, ca.facility_id, ca.assigned_user_id, ca.scheduled_date, ca.status, ca.started_at, ca.completed_at, ca.created_at, u.full_name, u.username
     `, [assignmentId]);
 
     res.status(201).json(assignmentResult.rows[0]);
@@ -254,7 +252,7 @@ router.post('/auto-assign/:facilityId', authenticateToken, async (req, res) => {
 
     // Get users assigned to this facility
     const usersResult = await pool.query(`
-      SELECT u.id, u.username
+      SELECT u.id, u.username, u.full_name
       FROM users u
       INNER JOIN user_facilities uf ON u.id = uf.user_id
       WHERE uf.facility_id = $1 AND u.role = 'User'
@@ -289,34 +287,49 @@ router.post('/auto-assign/:facilityId', authenticateToken, async (req, res) => {
 
     const assignments = [];
     const today = new Date();
-    let assignmentCount = 0; // Track how many new assignments we've made
 
-    for (let i = 0; i < 7; i++) {
-      const date = new Date(today);
-      date.setDate(date.getDate() + i);
-      const scheduledDate = toDateOnly(date);
+    await pool.query('BEGIN');
+    try {
+      for (let i = 0; i < 7; i++) {
+        const date = new Date(today);
+        date.setDate(date.getDate() + i);
+        const scheduledDate = toDateOnly(date);
 
-      // Check if assignment already exists
-      const existingResult = await pool.query(`
-        SELECT id FROM cleaning_assignments
-        WHERE facility_id = $1 AND scheduled_date = $2
-      `, [facilityId, scheduledDate]);
-
-      if (existingResult.rows.length === 0) {
-        // Round-robin assignment starting from where we left off
-        const userIndex = (startIndex + assignmentCount) % users.length;
+        // Re-run assignment every time: rotate users for each day and refresh checklist.
+        const userIndex = (startIndex + i) % users.length;
         const assignedUser = users[userIndex];
-        assignmentCount++; // Increment after using
 
-        const result = await pool.query(`
-          INSERT INTO cleaning_assignments (facility_id, assigned_user_id, scheduled_date)
-          VALUES ($1, $2, $3)
-          RETURNING id
-        `, [facilityId, assignedUser.id, scheduledDate]);
+        const existingResult = await pool.query(`
+          SELECT id FROM cleaning_assignments
+          WHERE facility_id = $1 AND scheduled_date = $2
+          LIMIT 1
+        `, [facilityId, scheduledDate]);
 
-        const assignmentId = result.rows[0].id;
+        let assignmentId;
+        if (existingResult.rows.length > 0) {
+          assignmentId = existingResult.rows[0].id;
+          await pool.query(`
+            UPDATE cleaning_assignments
+            SET assigned_user_id = $1,
+                status = 'pending',
+                started_at = NULL,
+                completed_at = NULL
+            WHERE id = $2
+          `, [assignedUser.id, assignmentId]);
 
-        // Create checklist items
+          await pool.query(`
+            DELETE FROM cleaning_checklist_items
+            WHERE assignment_id = $1
+          `, [assignmentId]);
+        } else {
+          const result = await pool.query(`
+            INSERT INTO cleaning_assignments (facility_id, assigned_user_id, scheduled_date)
+            VALUES ($1, $2, $3)
+            RETURNING id
+          `, [facilityId, assignedUser.id, scheduledDate]);
+          assignmentId = result.rows[0].id;
+        }
+
         for (const [area, tasks] of Object.entries(CHECKLIST_TEMPLATES)) {
           for (const taskName of tasks) {
             await pool.query(`
@@ -329,12 +342,17 @@ router.post('/auto-assign/:facilityId', authenticateToken, async (req, res) => {
         assignments.push({
           id: assignmentId,
           scheduled_date: scheduledDate,
-          cleaner_name: assignedUser.username
+          cleaner_name: assignedUser.full_name || assignedUser.username
         });
       }
+
+      await pool.query('COMMIT');
+    } catch (txError) {
+      await pool.query('ROLLBACK');
+      throw txError;
     }
 
-    res.json({ created: assignments.length, assignments });
+    res.json({ assigned: assignments.length, assignments });
   } catch (error) {
     console.error('Error auto-assigning:', error);
     res.status(500).json({ error: 'Failed to auto-assign' });
