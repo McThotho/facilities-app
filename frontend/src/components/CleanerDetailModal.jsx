@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { cleaningAssignmentsAPI } from '../utils/api';
-import { X, CheckCircle, Circle, Camera, Image as ImageIcon, Trash2 } from 'lucide-react';
+import { X, CheckCircle, Circle, Camera, Image as ImageIcon, FolderOpen } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
 
@@ -28,12 +28,26 @@ export default function CleanerDetailModal({ assignment, onClose, onUpdate }) {
   const handleToggleItem = async (itemId) => {
     if (!canEdit) return;
 
+    // Optimistic update - immediately toggle the checkbox in UI
+    setChecklist(prev => prev.map(item =>
+      item.id === itemId
+        ? { ...item, is_completed: !item.is_completed, completed_at: !item.is_completed ? new Date().toISOString() : null }
+        : item
+    ));
+
     try {
       const response = await cleaningAssignmentsAPI.toggleChecklistItem(itemId);
-      setChecklist(checklist.map(item => item.id === itemId ? response.data : item));
+      // Update with server response to ensure consistency
+      setChecklist(prev => prev.map(item => item.id === itemId ? response.data : item));
       onUpdate();
     } catch (error) {
       console.error('Failed to toggle item:', error);
+      // Revert on failure
+      setChecklist(prev => prev.map(item =>
+        item.id === itemId
+          ? { ...item, is_completed: !item.is_completed, completed_at: item.is_completed ? null : undefined }
+          : item
+      ));
       alert('Failed to update checklist item');
     }
   };
@@ -213,33 +227,53 @@ export default function CleanerDetailModal({ assignment, onClose, onUpdate }) {
                           </div>
 
                           {/* Photo Upload/Display */}
-                          <div className="flex items-center space-x-2">
+                          <div className="flex items-center space-x-1">
                             {item.photo_url ? (
                               <a
-                                href={`http://localhost:3001${item.photo_url}`}
+                                href={item.photo_url}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="flex items-center space-x-1 px-3 py-2 min-h-[44px] bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 transition text-sm"
                               >
                                 <ImageIcon size={16} />
-                                <span>View Photo</span>
+                                <span>View</span>
                               </a>
                             ) : canEdit && (
-                              <label className="flex items-center space-x-1 px-3 py-2 min-h-[44px] bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition cursor-pointer text-sm">
-                                <Camera size={16} />
-                                <span>{uploadingItemId === item.id ? 'Uploading...' : 'Add Photo'}</span>
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  className="hidden"
-                                  onChange={(e) => {
-                                    if (e.target.files && e.target.files[0]) {
-                                      handlePhotoUpload(item.id, e.target.files[0]);
-                                    }
-                                  }}
-                                  disabled={uploadingItemId === item.id}
-                                />
-                              </label>
+                              uploadingItemId === item.id ? (
+                                <span className="px-3 py-2 text-sm text-gray-500">Uploading...</span>
+                              ) : (
+                                <>
+                                  <label className="flex items-center space-x-1 px-2 py-2 min-h-[44px] bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 transition cursor-pointer text-sm">
+                                    <Camera size={16} />
+                                    <span className="hidden sm:inline">Camera</span>
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      capture="environment"
+                                      className="hidden"
+                                      onChange={(e) => {
+                                        if (e.target.files && e.target.files[0]) {
+                                          handlePhotoUpload(item.id, e.target.files[0]);
+                                        }
+                                      }}
+                                    />
+                                  </label>
+                                  <label className="flex items-center space-x-1 px-2 py-2 min-h-[44px] bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition cursor-pointer text-sm">
+                                    <FolderOpen size={16} />
+                                    <span className="hidden sm:inline">Gallery</span>
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      className="hidden"
+                                      onChange={(e) => {
+                                        if (e.target.files && e.target.files[0]) {
+                                          handlePhotoUpload(item.id, e.target.files[0]);
+                                        }
+                                      }}
+                                    />
+                                  </label>
+                                </>
+                              )
                             )}
                           </div>
                         </div>
