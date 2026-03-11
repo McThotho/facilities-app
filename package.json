@@ -4,5 +4,9 @@
   "scripts": {
     "start": "cd backend && node server.js",
     "install": "cd backend && npm install"
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "http-proxy-middleware": "^3.0.5"
   }
 }
