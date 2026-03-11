@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FacilityHub - Facilities Management System</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #111827; color: #f3f4f6; min-height: 100vh; }
+
+  /* ===== LOGIN PAGE ===== */
+  .login-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #111827 0%, #1e3a5f 50%, #111827 100%);
+    position: relative;
+    overflow: hidden;
+  }
+  .login-bg-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.3;
+    animation: float 8s ease-in-out infinite;
+  }
+  .login-bg-orb.orb1 { width: 400px; height: 400px; background: #3b82f6; top: -100px; left: -100px; }
+  .login-bg-orb.orb2 { width: 300px; height: 300px; background: #8b5cf6; bottom: -80px; right: -80px; animation-delay: -4s; }
+  .login-bg-orb.orb3 { width: 200px; height: 200px; background: #06b6d4; top: 50%; left: 50%; animation-delay: -2s; }
+  @keyframes float {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-30px) scale(1.05); }
+  }
+  .login-card {
+    background: rgba(255,255,255,0.05);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 24px;
+    padding: 48px;
+    width: 100%;
+    max-width: 420px;
+    position: relative;
+    z-index: 1;
+    box-shadow: 0 25px 50px rgba(0,0,0,0.4);
+  }
+  .login-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+  .login-logo svg { width: 36px; height: 36px; color: #3b82f6; }
+  .login-logo h1 { font-size: 28px; font-weight: 700; background: linear-gradient(135deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .login-subtitle { text-align: center; color: #9ca3af; font-size: 14px; margin-bottom: 32px; }
+  .input-group { margin-bottom: 20px; position: relative; }
+  .input-group label { display: block; font-size: 13px; color: #9ca3af; margin-bottom: 6px; font-weight: 500; }
+  .input-group input {
+    width: 100%;
+    padding: 12px 16px 12px 44px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    color: #f3f4f6;
+    font-size: 15px;
+    outline: none;
+    transition: all 0.2s;
+  }
+  .input-group input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
+  .input-icon {
+    position: absolute;
+    left: 14px;
+    top: 38px;
+    width: 18px;
+    height: 18px;
+    color: #6b7280;
+  }
+  .login-btn {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    margin-top: 8px;
+  }
+  .login-btn:hover { transform: translateY(-1px); box-shadow: 0 10px 30px rgba(59,130,246,0.3); }
+  .login-error {
+    background: rgba(239,68,68,0.1);
+    border: 1px solid rgba(239,68,68,0.3);
+    color: #fca5a5;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 13px;
+    margin-bottom: 16px;
+    display: none;
+  }
+
+  /* ===== LAYOUT ===== */
+  .app-layout { display: flex; min-height: 100vh; }
+  .sidebar {
+    width: 260px;
+    background: #1f2937;
+    border-right: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 40;
+    transition: transform 0.3s;
+  }
+  .sidebar-header {
+    padding: 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .sidebar-header .logo-icon {
+    width: 40px; height: 40px;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .sidebar-header h2 { font-size: 18px; font-weight: 700; }
+  .sidebar-header .role-badge { font-size: 11px; color: #9ca3af; }
+  .sidebar-nav { flex: 1; padding: 12px; overflow-y: auto; }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    color: #9ca3af;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-size: 14px;
+    margin-bottom: 2px;
+  }
+  .nav-item:hover { background: rgba(255,255,255,0.05); color: #e5e7eb; }
+  .nav-item.active { background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(139,92,246,0.1)); color: #93c5fd; font-weight: 600; }
+  .nav-section { font-size: 11px; text-transform: uppercase; color: #6b7280; padding: 16px 14px 6px; letter-spacing: 0.05em; font-weight: 600; }
+  .facility-badge {
+    margin-left: auto;
+    background: rgba(59,130,246,0.15);
+    color: #93c5fd;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 999px;
+  }
+  .sidebar-user {
+    padding: 16px 20px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .user-avatar {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  .user-info { flex: 1; }
+  .user-info .name { font-size: 13px; font-weight: 600; }
+  .user-info .email { font-size: 11px; color: #6b7280; }
+  .logout-btn {
+    background: none;
+    border: none;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 8px;
+    transition: all 0.15s;
+  }
+  .logout-btn:hover { color: #ef4444; background: rgba(239,68,68,0.1); }
+
+  /* Main content */
+  .main-content { flex: 1; margin-left: 260px; }
+  .top-bar {
+    height: 60px;
+    background: rgba(17,24,39,0.8);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    position: sticky;
+    top: 0;
+    z-index: 30;
+  }
+  .top-bar h1 { font-size: 18px; font-weight: 600; }
+  .top-bar-actions { display: flex; gap: 8px; }
+  .icon-btn {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.05);
+    color: #9ca3af;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .icon-btn:hover { background: rgba(255,255,255,0.1); color: #e5e7eb; }
+
+  .page-content { padding: 24px; }
+
+  /* ===== DASHBOARD ===== */
+  .welcome-section {
+    margin-bottom: 24px;
+  }
+  .welcome-section h2 { font-size: 24px; font-weight: 700; }
+  .welcome-section p { color: #9ca3af; font-size: 14px; margin-top: 4px; }
+  .live-dot { display: inline-block; width: 8px; height: 8px; background: #22c55e; border-radius: 50%; margin-right: 6px; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+  .stat-card {
+    background: #1f2937;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 16px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.2s;
+  }
+  .stat-card:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+  .stat-card .gradient-bg {
+    position: absolute;
+    top: 0; right: 0;
+    width: 120px; height: 120px;
+    border-radius: 50%;
+    filter: blur(40px);
+    opacity: 0.15;
+  }
+  .stat-card .icon-box {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 14px;
+  }
+  .stat-card .label { font-size: 13px; color: #9ca3af; margin-bottom: 4px; }
+  .stat-card .value { font-size: 28px; font-weight: 700; }
+  .stat-card .sub { font-size: 12px; color: #6b7280; margin-top: 2px; }
+
+  .card-blue .gradient-bg { background: #3b82f6; }
+  .card-blue .icon-box { background: rgba(59,130,246,0.15); color: #60a5fa; }
+  .card-green .gradient-bg { background: #22c55e; }
+  .card-green .icon-box { background: rgba(34,197,94,0.15); color: #4ade80; }
+  .card-amber .gradient-bg { background: #f59e0b; }
+  .card-amber .icon-box { background: rgba(245,158,11,0.15); color: #fbbf24; }
+  .card-red .gradient-bg { background: #ef4444; }
+  .card-red .icon-box { background: rgba(239,68,68,0.15); color: #f87171; }
+
+  /* Chart + Activity */
+  .dashboard-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+  .panel {
+    background: #1f2937;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 16px;
+    padding: 20px;
+  }
+  .panel h3 { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+  .chart-placeholder {
+    height: 200px;
+    background: rgba(59,130,246,0.05);
+    border-radius: 12px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 24px;
+    padding: 20px;
+  }
+  .chart-bar-group { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .chart-bars { display: flex; gap: 6px; align-items: flex-end; }
+  .chart-bar {
+    width: 28px;
+    border-radius: 6px 6px 0 0;
+    transition: all 0.5s ease;
+  }
+  .chart-bar.completed { background: linear-gradient(180deg, #3b82f6, #1d4ed8); }
+  .chart-bar.total { background: rgba(59,130,246,0.2); }
+  .chart-label { font-size: 11px; color: #6b7280; }
+
+  .activity-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .activity-item:last-child { border: none; }
+  .activity-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .activity-dot.blue { background: #3b82f6; }
+  .activity-dot.green { background: #22c55e; }
+  .activity-dot.amber { background: #f59e0b; }
+  .activity-text { font-size: 13px; }
+  .activity-sub { font-size: 11px; color: #6b7280; }
+
+  /* ===== FACILITY DETAIL ===== */
+  .facility-header {
+    background: linear-gradient(135deg, rgba(59,130,246,0.1), rgba(139,92,246,0.05));
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .facility-header h2 { font-size: 22px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+  .facility-stats { display: flex; gap: 24px; margin-top: 12px; }
+  .facility-stat { text-align: center; }
+  .facility-stat .num { font-size: 22px; font-weight: 700; color: #60a5fa; }
+  .facility-stat .lbl { font-size: 11px; color: #6b7280; text-transform: uppercase; }
+
+  .tabs { display: flex; gap: 4px; background: #1f2937; border-radius: 12px; padding: 4px; margin-bottom: 20px; }
+  .tab-btn {
+    flex: 1;
+    padding: 10px 16px;
+    border: none;
+    background: transparent;
+    color: #9ca3af;
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .tab-btn.active { background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; font-weight: 600; }
+  .tab-btn:hover:not(.active) { background: rgba(255,255,255,0.05); }
+
+  .tab-content {
+    background: #1f2937;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 16px;
+    padding: 20px;
+    min-height: 300px;
+  }
+
+  /* Cleaning schedule */
+  .schedule-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .schedule-header h4 { font-size: 15px; font-weight: 600; }
+  .auto-assign-btn {
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .auto-assign-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(59,130,246,0.3); }
+  .day-cards { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+  .day-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+    padding: 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .day-card:hover { border-color: rgba(59,130,246,0.3); background: rgba(59,130,246,0.05); }
+  .day-card.today { border-color: #3b82f6; background: rgba(59,130,246,0.08); }
+  .day-name { font-size: 11px; color: #6b7280; text-transform: uppercase; }
+  .day-date { font-size: 18px; font-weight: 700; margin: 4px 0; }
+  .day-status { font-size: 11px; padding: 3px 8px; border-radius: 999px; display: inline-block; }
+  .status-completed { background: rgba(34,197,94,0.15); color: #4ade80; }
+  .status-progress { background: rgba(59,130,246,0.15); color: #60a5fa; }
+  .status-pending { background: rgba(245,158,11,0.15); color: #fbbf24; }
+  .status-unassigned { background: rgba(107,114,128,0.15); color: #9ca3af; }
+
+  /* Chat */
+  .chat-container { display: flex; flex-direction: column; height: 350px; }
+  .chat-messages { flex: 1; overflow-y: auto; padding: 8px 0; }
+  .chat-msg { display: flex; gap: 10px; margin-bottom: 12px; }
+  .chat-avatar { width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+  .chat-bubble { background: rgba(255,255,255,0.05); border-radius: 12px; padding: 10px 14px; max-width: 75%; }
+  .chat-name { font-size: 12px; font-weight: 600; color: #60a5fa; margin-bottom: 2px; }
+  .chat-text { font-size: 13px; color: #d1d5db; }
+  .chat-time { font-size: 10px; color: #6b7280; margin-top: 4px; }
+  .chat-input-bar { display: flex; gap: 8px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.06); }
+  .chat-input {
+    flex: 1;
+    padding: 10px 14px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    color: #f3f4f6;
+    font-size: 13px;
+    outline: none;
+  }
+  .chat-input:focus { border-color: #3b82f6; }
+  .chat-send {
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-weight: 500;
+    cursor: pointer;
+  }
+
+  /* Grievances */
+  .grievance-item {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .grievance-cat { font-size: 13px; font-weight: 600; }
+  .grievance-desc { font-size: 12px; color: #9ca3af; margin-top: 2px; }
+  .grievance-status { font-size: 11px; padding: 4px 10px; border-radius: 999px; font-weight: 500; }
+
+  /* Visits */
+  .visit-item {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .visit-date { font-size: 13px; font-weight: 600; }
+  .visit-assignee { font-size: 12px; color: #9ca3af; }
+  .visit-status { font-size: 11px; padding: 4px 10px; border-radius: 999px; font-weight: 500; }
+
+  /* Hidden pages */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* Staff page */
+  .staff-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+  .staff-table th { text-align: left; padding: 12px 16px; font-size: 12px; text-transform: uppercase; color: #6b7280; border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .staff-table td { padding: 12px 16px; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+  .staff-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .role-tag { font-size: 11px; padding: 3px 10px; border-radius: 999px; font-weight: 500; }
+  .role-admin { background: rgba(139,92,246,0.15); color: #c4b5fd; }
+  .role-manager { background: rgba(59,130,246,0.15); color: #93c5fd; }
+  .role-user { background: rgba(34,197,94,0.15); color: #86efac; }
+
+  @media (max-width: 768px) {
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .dashboard-grid { grid-template-columns: 1fr; }
+    .day-cards { grid-template-columns: repeat(3, 1fr); }
+    .sidebar { transform: translateX(-100%); }
+    .sidebar.open { transform: translateX(0); }
+    .main-content { margin-left: 0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== LOGIN PAGE ===== -->
+<div id="loginPage" class="login-page">
+  <div class="login-bg-orb orb1"></div>
+  <div class="login-bg-orb orb2"></div>
+  <div class="login-bg-orb orb3"></div>
+  <div class="login-card">
+    <div class="login-logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg>
+      <h1>FacilityHub</h1>
+    </div>
+    <p class="login-subtitle">Facilities Management System</p>
+    <div class="login-error" id="loginError">Invalid credentials</div>
+    <div class="input-group">
+      <label>Username</label>
+      <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <input type="text" id="username" placeholder="Enter username" value="admin">
+    </div>
+    <div class="input-group">
+      <label>Password</label>
+      <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      <input type="password" id="password" placeholder="Enter password" value="admin123">
+    </div>
+    <button class="login-btn" onclick="handleLogin()">Sign In</button>
+  </div>
+</div>
+
+<!-- ===== APP LAYOUT ===== -->
+<div id="appLayout" class="app-layout" style="display:none;">
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="logo-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/></svg>
+      </div>
+      <div>
+        <h2>FacilityHub</h2>
+        <div class="role-badge">Administrator</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-item active" onclick="showPage('dashboard')" id="nav-dashboard">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Dashboard
+      </div>
+      <div class="nav-item" onclick="showPage('staff')" id="nav-staff">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Staff Management
+      </div>
+      <div class="nav-section">Facilities</div>
+      <div class="nav-item" onclick="showPage('facility')" id="nav-facility-1">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/></svg>
+        M. Rose Bush
+      </div>
+      <div class="nav-item" id="nav-facility-2">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/></svg>
+        G. Araakuri
+      </div>
+      <div class="nav-item" id="nav-facility-3">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/></svg>
+        M. Kashmeeru Wadhee
+      </div>
+      <div class="nav-item" id="nav-facility-4">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/></svg>
+        M. Dhumbuge
+      </div>
+      <div class="nav-item" id="nav-facility-5">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/></svg>
+        G. Gaakoshi
+      </div>
+    </nav>
+    <div class="sidebar-user">
+      <div class="user-avatar">A</div>
+      <div class="user-info">
+        <div class="name">Administrator</div>
+        <div class="email">admin@facilities.com</div>
+      </div>
+      <button class="logout-btn" onclick="handleLogout()" title="Logout">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main-content">
+    <div class="top-bar">
+      <h1 id="pageTitle">Dashboard</h1>
+      <div class="top-bar-actions">
+        <button class="icon-btn" title="Toggle theme">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Dashboard Page -->
+    <div class="page-content page active" id="page-dashboard">
+      <div class="welcome-section">
+        <h2>Welcome back, Administrator</h2>
+        <p><span class="live-dot"></span>System is running smoothly</p>
+      </div>
+      <div class="kpi-grid">
+        <div class="stat-card card-blue">
+          <div class="gradient-bg"></div>
+          <div class="icon-box" style="background:rgba(59,130,246,0.15);color:#60a5fa;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/></svg>
+          </div>
+          <div class="label">Total Facilities</div>
+          <div class="value">5</div>
+          <div class="sub">All locations active</div>
+        </div>
+        <div class="stat-card card-green">
+          <div class="gradient-bg"></div>
+          <div class="icon-box" style="background:rgba(34,197,94,0.15);color:#4ade80;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          </div>
+          <div class="label">Visit Completion</div>
+          <div class="value">87%</div>
+          <div class="sub">Last 30 days</div>
+        </div>
+        <div class="stat-card card-amber">
+          <div class="gradient-bg"></div>
+          <div class="icon-box" style="background:rgba(245,158,11,0.15);color:#fbbf24;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76Z"/></svg>
+          </div>
+          <div class="label">Cleaning Adherence</div>
+          <div class="value">92%</div>
+          <div class="sub">On schedule</div>
+        </div>
+        <div class="stat-card card-red">
+          <div class="gradient-bg"></div>
+          <div class="icon-box" style="background:rgba(239,68,68,0.15);color:#f87171;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          </div>
+          <div class="label">Overdue Tasks</div>
+          <div class="value">3</div>
+          <div class="sub">Needs attention</div>
+        </div>
+      </div>
+      <div class="dashboard-grid">
+        <div class="panel">
+          <h3>Task Completion Overview</h3>
+          <div class="chart-placeholder">
+            <div class="chart-bar-group">
+              <div class="chart-bars">
+                <div class="chart-bar completed" style="height:130px;"></div>
+                <div class="chart-bar total" style="height:150px;"></div>
+              </div>
+              <span class="chart-label">Visits</span>
+            </div>
+            <div class="chart-bar-group">
+              <div class="chart-bars">
+                <div class="chart-bar completed" style="height:140px;"></div>
+                <div class="chart-bar total" style="height:155px;"></div>
+              </div>
+              <span class="chart-label">Cleaning</span>
+            </div>
+            <div class="chart-bar-group">
+              <div class="chart-bars">
+                <div class="chart-bar completed" style="height:80px;"></div>
+                <div class="chart-bar total" style="height:110px;"></div>
+              </div>
+              <span class="chart-label">Grievances</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:16px;margin-top:12px;justify-content:center;">
+            <span style="font-size:12px;color:#60a5fa;">&#9632; Completed</span>
+            <span style="font-size:12px;color:rgba(59,130,246,0.3);">&#9632; Total</span>
+          </div>
+        </div>
+        <div class="panel">
+          <h3>Recent Activity</h3>
+          <div class="activity-item">
+            <div class="activity-dot blue"></div>
+            <div>
+              <div class="activity-text">Visit scheduled at M. Rose Bush</div>
+              <div class="activity-sub">Tomorrow, 10:00 AM</div>
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="activity-dot green"></div>
+            <div>
+              <div class="activity-text">Cleaning completed - G. Araakuri</div>
+              <div class="activity-sub">Today, 2:30 PM</div>
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="activity-dot amber"></div>
+            <div>
+              <div class="activity-text">Grievance filed - Water Issue</div>
+              <div class="activity-sub">Today, 11:15 AM</div>
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="activity-dot green"></div>
+            <div>
+              <div class="activity-text">Cleaning completed - M. Dhumbuge</div>
+              <div class="activity-sub">Yesterday, 4:00 PM</div>
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="activity-dot blue"></div>
+            <div>
+              <div class="activity-text">New staff member added</div>
+              <div class="activity-sub">Yesterday, 9:00 AM</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Staff Page -->
+    <div class="page-content page" id="page-staff">
+      <div class="welcome-section">
+        <h2>Staff Management</h2>
+        <p>Manage team members and role assignments</p>
+      </div>
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <h3>All Staff Members</h3>
+          <button class="auto-assign-btn">+ Add Staff</button>
+        </div>
+        <table class="staff-table">
+          <thead>
+            <tr><th>Name</th><th>Username</th><th>Employee ID</th><th>Role</th><th>Contact</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Administrator</strong></td>
+              <td>admin</td>
+              <td>EMP001</td>
+              <td><span class="role-tag role-admin">Administrator</span></td>
+              <td>-</td>
+            </tr>
+            <tr>
+              <td><strong>Ahmed Ali</strong></td>
+              <td>ahmed.ali</td>
+              <td>EMP002</td>
+              <td><span class="role-tag role-manager">Manager</span></td>
+              <td>+960 7712345</td>
+            </tr>
+            <tr>
+              <td><strong>Fathimath Noor</strong></td>
+              <td>fathimath</td>
+              <td>EMP003</td>
+              <td><span class="role-tag role-user">User</span></td>
+              <td>+960 7798765</td>
+            </tr>
+            <tr>
+              <td><strong>Ibrahim Hassan</strong></td>
+              <td>ibrahim</td>
+              <td>EMP004</td>
+              <td><span class="role-tag role-user">User</span></td>
+              <td>+960 7756789</td>
+            </tr>
+            <tr>
+              <td><strong>Mariyam Shifa</strong></td>
+              <td>mariyam</td>
+              <td>EMP005</td>
+              <td><span class="role-tag role-user">User</span></td>
+              <td>+960 7743210</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Facility Detail Page -->
+    <div class="page-content page" id="page-facility">
+      <div class="facility-header">
+        <h2>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/></svg>
+          M. Rose Bush
+        </h2>
+        <div class="facility-stats">
+          <div class="facility-stat"><div class="num">12</div><div class="lbl">Visits</div></div>
+          <div class="facility-stat"><div class="num">28</div><div class="lbl">Cleaning</div></div>
+          <div class="facility-stat"><div class="num">45</div><div class="lbl">Messages</div></div>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab-btn active" onclick="showTab('cleaning')">Cleaning</button>
+        <button class="tab-btn" onclick="showTab('visits')">Visits</button>
+        <button class="tab-btn" onclick="showTab('grievances')">Grievances</button>
+        <button class="tab-btn" onclick="showTab('chat')">Chat</button>
+      </div>
+
+      <!-- Cleaning Tab -->
+      <div class="tab-content" id="tab-cleaning">
+        <div class="schedule-header">
+          <h4>7-Day Cleaning Schedule</h4>
+          <button class="auto-assign-btn">Auto Assign</button>
+        </div>
+        <div class="day-cards" id="dayCards"></div>
+      </div>
+
+      <!-- Visits Tab -->
+      <div class="tab-content" id="tab-visits" style="display:none;">
+        <div class="schedule-header">
+          <h4>Scheduled Visits</h4>
+          <button class="auto-assign-btn">+ Schedule Visit</button>
+        </div>
+        <div class="visit-item">
+          <div><div class="visit-date">Mar 12, 2026 - 10:00 AM</div><div class="visit-assignee">Assigned to: Ahmed Ali</div></div>
+          <span class="visit-status" style="background:rgba(245,158,11,0.15);color:#fbbf24;">Pending</span>
+        </div>
+        <div class="visit-item">
+          <div><div class="visit-date">Mar 14, 2026 - 2:00 PM</div><div class="visit-assignee">Assigned to: Ahmed Ali</div></div>
+          <span class="visit-status" style="background:rgba(245,158,11,0.15);color:#fbbf24;">Pending</span>
+        </div>
+        <div class="visit-item">
+          <div><div class="visit-date">Mar 10, 2026 - 9:00 AM</div><div class="visit-assignee">Assigned to: Ahmed Ali</div></div>
+          <span class="visit-status" style="background:rgba(34,197,94,0.15);color:#4ade80;">Completed</span>
+        </div>
+        <div class="visit-item">
+          <div><div class="visit-date">Mar 8, 2026 - 11:00 AM</div><div class="visit-assignee">Assigned to: Ahmed Ali</div></div>
+          <span class="visit-status" style="background:rgba(34,197,94,0.15);color:#4ade80;">Completed</span>
+        </div>
+      </div>
+
+      <!-- Grievances Tab -->
+      <div class="tab-content" id="tab-grievances" style="display:none;">
+        <div class="schedule-header">
+          <h4>Reported Issues</h4>
+          <button class="auto-assign-btn">+ Report Issue</button>
+        </div>
+        <div class="grievance-item">
+          <div><div class="grievance-cat">Water Issue</div><div class="grievance-desc">Low water pressure in bathroom - Reported by Fathimath</div></div>
+          <span class="grievance-status" style="background:rgba(59,130,246,0.15);color:#60a5fa;">Working</span>
+        </div>
+        <div class="grievance-item">
+          <div><div class="grievance-cat">Electrical</div><div class="grievance-desc">Light flickering in living room - Reported by Ibrahim</div></div>
+          <span class="grievance-status" style="background:rgba(245,158,11,0.15);color:#fbbf24;">Picked</span>
+        </div>
+        <div class="grievance-item">
+          <div><div class="grievance-cat">HVAC</div><div class="grievance-desc">AC not cooling properly - Reported by Mariyam</div></div>
+          <span class="grievance-status" style="background:rgba(107,114,128,0.15);color:#9ca3af;">Pending</span>
+        </div>
+        <div class="grievance-item">
+          <div><div class="grievance-cat">Plumbing</div><div class="grievance-desc">Kitchen sink drainage slow - Reported by Fathimath</div></div>
+          <span class="grievance-status" style="background:rgba(34,197,94,0.15);color:#4ade80;">Completed</span>
+        </div>
+      </div>
+
+      <!-- Chat Tab -->
+      <div class="tab-content" id="tab-chat" style="display:none;">
+        <div class="chat-container">
+          <div class="chat-messages">
+            <div class="chat-msg">
+              <div class="chat-avatar">AA</div>
+              <div class="chat-bubble">
+                <div class="chat-name">Ahmed Ali</div>
+                <div class="chat-text">Good morning team! Please make sure all cleaning tasks are completed by 3 PM today.</div>
+                <div class="chat-time">9:15 AM</div>
+              </div>
+            </div>
+            <div class="chat-msg">
+              <div class="chat-avatar">FN</div>
+              <div class="chat-bubble">
+                <div class="chat-name">Fathimath Noor</div>
+                <div class="chat-text">Understood! I've started with the living area. Will update once done.</div>
+                <div class="chat-time">9:22 AM</div>
+              </div>
+            </div>
+            <div class="chat-msg">
+              <div class="chat-avatar">IH</div>
+              <div class="chat-bubble">
+                <div class="chat-name">Ibrahim Hassan</div>
+                <div class="chat-text">Bathroom cleaning is complete. Moving to bedrooms now.</div>
+                <div class="chat-time">10:45 AM</div>
+              </div>
+            </div>
+            <div class="chat-msg">
+              <div class="chat-avatar">MS</div>
+              <div class="chat-bubble">
+                <div class="chat-name">Mariyam Shifa</div>
+                <div class="chat-text">FYI - the AC in bedroom 2 seems to have an issue. I've filed a grievance.</div>
+                <div class="chat-time">11:10 AM</div>
+              </div>
+            </div>
+            <div class="chat-msg">
+              <div class="chat-avatar">AA</div>
+              <div class="chat-bubble">
+                <div class="chat-name">Ahmed Ali</div>
+                <div class="chat-text">Thanks Mariyam. I'll check on that. Keep up the good work everyone!</div>
+                <div class="chat-time">11:30 AM</div>
+              </div>
+            </div>
+          </div>
+          <div class="chat-input-bar">
+            <input class="chat-input" type="text" placeholder="Type a message...">
+            <button class="chat-send">Send</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+  // Generate 7-day cleaning schedule
+  function generateDayCards() {
+    const container = document.getElementById('dayCards');
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const statuses = ['completed', 'completed', 'completed', 'progress', 'pending', 'unassigned', 'unassigned'];
+    const statusLabels = ['Completed', 'Completed', 'Completed', 'In Progress', 'Pending', 'Unassigned', 'Unassigned'];
+    const cleaners = ['Fathimath', 'Ibrahim', 'Mariyam', 'Fathimath', 'Ibrahim', '', ''];
+    const today = new Date();
+
+    for (let i = -3; i <= 3; i++) {
+      const d = new Date(today);
+      d.setDate(d.getDate() + i);
+      const idx = i + 3;
+      const isToday = i === 0;
+      container.innerHTML += `
+        <div class="day-card ${isToday ? 'today' : ''}">
+          <div class="day-name">${days[d.getDay()]}</div>
+          <div class="day-date">${d.getDate()}</div>
+          ${cleaners[idx] ? `<div style="font-size:11px;color:#9ca3af;margin-bottom:4px;">${cleaners[idx]}</div>` : ''}
+          <div class="day-status status-${statuses[idx]}">${statusLabels[idx]}</div>
+        </div>`;
+    }
+  }
+  generateDayCards();
+
+  // Login handler
+  function handleLogin() {
+    const user = document.getElementById('username').value;
+    const pass = document.getElementById('password').value;
+    if (user === 'admin' && pass === 'admin123') {
+      document.getElementById('loginPage').style.display = 'none';
+      document.getElementById('appLayout').style.display = 'flex';
+    } else {
+      document.getElementById('loginError').style.display = 'block';
+    }
+  }
+
+  // Logout handler
+  function handleLogout() {
+    document.getElementById('appLayout').style.display = 'none';
+    document.getElementById('loginPage').style.display = 'flex';
+  }
+
+  // Enter key on login
+  document.getElementById('password').addEventListener('keypress', e => { if (e.key === 'Enter') handleLogin(); });
+  document.getElementById('username').addEventListener('keypress', e => { if (e.key === 'Enter') handleLogin(); });
+
+  // Page navigation
+  function showPage(page) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('page-' + page).classList.add('active');
+    document.getElementById('nav-' + page).classList.add('active');
+    const titles = { dashboard: 'Dashboard', staff: 'Staff Management', facility: 'M. Rose Bush' };
+    document.getElementById('pageTitle').textContent = titles[page] || 'Dashboard';
+  }
+
+  // Tab switching
+  function showTab(tab) {
+    document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + tab).style.display = 'block';
+    event.target.classList.add('active');
+  }
+</script>
+</body>
+</html>
